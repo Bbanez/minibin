@@ -23,6 +23,7 @@ languages.
 | 7     | f64    | 8   | 0              | 64        |
 | 8     | bool   | 8   | 0              | 8         |
 | 9     | object | 8   | 32             | N         |
+| 10    | enum   | 8   | 8              | N         |
 
 Lets say that we have a data type like this:
 

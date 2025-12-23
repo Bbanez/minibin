@@ -20,12 +20,12 @@ func Read(path string) []*Schema {
 		filePathParts := strings.Split(filePath, "/")
 		bytesResult := fs.Read(filePathParts...)
 		if bytesResult.Error != nil {
-			panic(bytesResult.Error)
+			panic("Failed to read " + fs.Path(filePathParts...) + ": " + bytesResult.Error.Error())
 		}
 		tmpSchemas := []*Schema{}
 		err := json.Unmarshal(bytesResult.Value, &tmpSchemas)
 		if err != nil {
-			panic(err)
+			panic("Failed to deserialize " + fs.Path(filePathParts...) + ": " + err.Error())
 		}
 		for j := range tmpSchemas {
 			sch := tmpSchemas[j]
