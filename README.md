@@ -185,10 +185,10 @@ minibin uses a wire format similar to Protocol Buffers:
 
 ## Limitations
 
-- No support for nested messages (yet)
+- **64-bit Integer Precision**: INT64 and UINT64 types are limited by JavaScript's number precision (safe integer range: ±2^53-1). Values outside this range will lose precision. For true 64-bit support, consider using BigInt externally.
+- No support for nested messages
 - No support for repeated fields (arrays)
 - No support for maps
-- 32-bit integer limitations for very large numbers
 - No built-in schema validation
 
 ## License

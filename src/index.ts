@@ -56,16 +56,19 @@ export function encodeVarint(value: number): Uint8Array {
 
 /**
  * Decodes a varint from a buffer
+ * Note: Limited to 32-bit integers due to JavaScript number precision
  */
 export function decodeVarint(buffer: Uint8Array, offset: number): { value: number; length: number } {
   let value = 0;
   let shift = 0;
   let length = 0;
+  const maxBytes = 10; // Maximum varint length for 64-bit values
   
-  while (offset + length < buffer.length) {
+  while (offset + length < buffer.length && length < maxBytes) {
     const byte = buffer[offset + length];
     length++;
     
+    // For values beyond 32 bits, JavaScript number will lose precision
     value |= (byte & 0x7f) << shift;
     
     if ((byte & 0x80) === 0) {
