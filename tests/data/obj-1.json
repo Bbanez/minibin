@@ -23,6 +23,17 @@
                 "typ": "i32",
                 "array": true,
                 "required": true
+            },
+            {
+                "name": "u32",
+                "typ": "u32",
+                "required": true
+            },
+            {
+                "name": "u32Arr",
+                "typ": "u32",
+                "array": true,
+                "required": true
             }
         ]
     }

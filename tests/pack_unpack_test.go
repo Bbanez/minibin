@@ -12,8 +12,9 @@ func TestPack(t *testing.T) {
 	obj1 := minibin.Obj1{
 		Str:    "str",
 		StrArr: []string{"1", "2", "3"},
-		I32:    1234,
+		I32:    -1234,
 		I32Arr: []int32{1, 2, 3, 4},
+		U32: 1000000000,
 	}
 	s1 := utils.SerializeJson(obj1)
 	obj1Bytes := obj1.Pack()
