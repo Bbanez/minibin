@@ -11,7 +11,7 @@ import (
 func main() {
 	args := utils.GetArgs()
 	fmt.Println(args)
-	schemas := schema.Read("minibin")
+	schemas := schema.Read(args.Input)
 	var output []*parser.ParserOutputItem
 	switch args.Lang {
 	case "go":
