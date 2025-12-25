@@ -27,17 +27,20 @@ func Unpack[T UnpackabeEntry](o T, b []byte) error {
 	}
 	atByte := 0
 	for atByte < len(bytes) {
-		dataType := bytes[atByte]
-		switch dataType {
+		pos := int(bytes[atByte])
+		atByte += 1
+		typ, lenD := unmergeDataTypeAndLenDataLen(bytes[atByte])
+	atByte += 1
+		switch typ {
 		case 0:
 			atByte++
 			continue
 		case 1:
-			data, pos, next := UnpackString(bytes, atByte)
+			data, pos, next := UnpackString(bytes, atByte, pos, lenD)
 			atByte = next
 			o.SetPropAtPos(pos, data)
 		case 2:
-			data, pos, next := UnpackInt32(bytes, atByte)
+			data, pos, next := UnpackInt32(bytes, atByte, pos, lenD)
 			atByte = next
 			o.SetPropAtPos(pos, data)
 		case 3:
@@ -69,7 +72,7 @@ func Unpack[T UnpackabeEntry](o T, b []byte) error {
 			atByte = next
 			o.SetPropAtPos(pos, data)
 		case 10:
-			data, pos, next := UnpackString(bytes, atByte)
+			data, pos, next := UnpackString(bytes, atByte, pos, lenD)
 			atByte = next
 			o.SetPropAtPos(pos, data)
 		default:
@@ -77,6 +80,16 @@ func Unpack[T UnpackabeEntry](o T, b []byte) error {
 		}
 	}
 	return nil
+}
+
+func mergeDataTypeAndLenDataLen(typ byte, lenD byte) byte {
+	return lenD + (typ << 2)
+}
+
+func unmergeDataTypeAndLenDataLen(b byte) (int, int) {
+	lenD := b & 0b00000011
+	typ := (b & 0b11111100) >> 2
+	return int(typ), int(lenD)
 }
 
 func PackString(s string, pos int) []byte {
@@ -102,18 +115,13 @@ func PackString(s string, pos int) []byte {
 		lenB := make([]byte, lenD)
 		binary.LittleEndian.PutUint32(lenB, uint32(dataLen))
 	}
-	result := []byte{1, byte(pos), byte(lenD)}
+	typLenD := mergeDataTypeAndLenDataLen(byte(1), byte(lenD))
+	result := []byte{byte(pos), typLenD}
 	result = append(result, lenB...)
 	result = append(result, data...)
 	return result
 }
-func UnpackString(b []byte, atByte int) (string, int, int) {
-	// Skip byte 0, it is type
-	atByte += 1
-	pos := int(b[atByte])
-	atByte += 1
-	lenD := int(b[atByte])
-	atByte += 1
+func UnpackString(b []byte, atByte int, pos int, lenD int) (string, int, int) {
 	dataLenBytes := b[atByte : atByte+lenD]
 	atByte += lenD
 	var dataLen int
@@ -133,18 +141,16 @@ func UnpackString(b []byte, atByte int) (string, int, int) {
 }
 
 func PackInt32(num int32, pos int) []byte {
-	result := []byte{2, byte(pos)}
+	typLenD := mergeDataTypeAndLenDataLen(2, 4)
+	result := []byte{byte(pos), typLenD}
 	b := make([]byte, 4)
 	binary.LittleEndian.PutUint32(b, uint32(num))
 	result = append(result, b...)
 	return result
 }
-func UnpackInt32(b []byte, atByte int) (int32, int, int) {
-	atByte += 1
-	pos := b[atByte]
-	atByte += 1
-	dataBytes := b[atByte : atByte+4]
-	atByte += 4
+func UnpackInt32(b []byte, atByte int, pos int, lenD int) (int32, int, int) {
+	dataBytes := b[atByte : atByte+lenD]
+	atByte += lenD
 	data := binary.LittleEndian.Uint32(dataBytes)
 	return int32(data), int(pos), atByte
 }

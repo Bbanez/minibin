@@ -1,5 +1,18 @@
 package schema
 
+var SchemaPropAllowedTypes = []string{
+	"string",
+	"i32",
+	"i64",
+	"u32",
+	"u64",
+	"f32",
+	"f64",
+	"bool",
+	"object",
+	"enum",
+}
+
 type SchemaProp struct {
 	Name     string
 	GoName   string
