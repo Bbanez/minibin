@@ -1,0 +1,29 @@
+[
+    {
+        "name": "Obj1",
+        "props": [
+            {
+                "name": "str",
+                "typ": "string",
+                "required": true
+            },
+            {
+                "name": "strArr",
+                "typ": "string",
+                "array": true,
+                "required": true
+            },
+            {
+                "name": "i32",
+                "typ": "i32",
+                "required": true
+            },
+            {
+                "name": "i32Arr",
+                "typ": "i32",
+                "array": true,
+                "required": true
+            }
+        ]
+    }
+]

@@ -25,6 +25,17 @@ languages.
 | 9     | object | 8   | 32             | N         |
 | 10    | enum   | 8   | 8              | N         |
 
+### String encoding
+
+  1 byte  000000  00  1-4 bytes  N bytes
+  |----|  |----| |--| |-------|  |-----| 
+  |       |      |    |          | String data bytes
+  |       |      |    | Data bytes len
+  |       |      | Len of data bytes len
+  |       | Data type
+  | Property position
+
+
 Lets say that we have a data type like this:
 
 ```json

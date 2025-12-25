@@ -1,40 +1,31 @@
 package tests
 
 import (
-	"encoding/json"
 	"fmt"
 	"testing"
-	"time"
 
-	minibin "github.com/bbanez/minibin/dist"
 	"github.com/bbanez/minibin/src/utils"
+	minibin "github.com/bbanez/minibin/tests/dist"
 )
 
 func TestPack(t *testing.T) {
-	entry := minibin.Entry{
-		Id:        "123",
-		CreatedAt: uint64(time.Now().UnixMilli()),
-		UpdatedAt: 2,
-		Name:      utils.StringRef("My Entry"),
-		Props: []*minibin.EntryProp{
-			{
-				Id:  "1",
-				Typ: minibin.ENTRY_PROP_TYP_STRING,
-			},
-			{
-				Id:  "2",
-				Typ: minibin.ENTRY_PROP_TYP_NUMBER,
-			},
-		},
-		Tags: []*string{utils.StringRef("Blog"), utils.StringRef("L")},
+	obj1 := minibin.Obj1{
+		Str:    "str",
+		StrArr: []string{"1", "2", "3"},
+		I32:    1234,
+		I32Arr: []int32{1, 2, 3, 4},
 	}
-	bytes := entry.Pack()
-	jsonB, err := json.Marshal(entry)
-	fmt.Println("Packed bytes:", bytes)
-	fmt.Println("Size:", len(bytes), len(jsonB))
-	e, err := minibin.UnpackEntry(bytes)
+	s1 := utils.SerializeJson(obj1)
+	obj1Bytes := obj1.Pack()
+	fmt.Println("Packed size:", len(obj1Bytes), len(s1), "-> Packed bytes:", obj1Bytes)
+	e, err := minibin.UnpackObj1(obj1Bytes)
 	if err != nil {
 		t.Fatal("Failed to unpack entry:", err)
 	}
-	fmt.Println(utils.SerializeJsonPretty(e))
+	s2 := utils.SerializeJson(e)
+	fmt.Println(s1)
+	fmt.Println(s2)
+	if s1 != s2 {
+		t.Errorf("Object do not match after pack/unpack")
+	}
 }
