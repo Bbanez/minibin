@@ -233,6 +233,23 @@ func UnpackObject(b []byte, atByte int, lenD int) ([]byte, int) {
 	return dataBytes, atByte + dataLen
 }
 
+func PackEnum(s string, pos int) []byte {
+	data := []byte(s)
+	lenD, dataLenBytes := splitUint32(uint32(len(data)))
+	typLenD := mergeDataTypeAndLenDataLen(10, byte(lenD))
+	result := []byte{byte(pos), typLenD}
+	result = append(result, dataLenBytes...)
+	result = append(result, data...)
+	return result
+}
+func UnpackEnum(b []byte, atByte int, lenD int) (string, int) {
+	lenD++
+	dataLen := int(mergeUint32(lenD, b[atByte:atByte+lenD]))
+	atByte += lenD
+	dataBytes := b[atByte : atByte+dataLen]
+	return string(dataBytes), atByte + dataLen
+}
+
 func mergeDataTypeAndLenDataLen(typ byte, lenD byte) byte {
 	return lenD + (typ << 4)
 }
@@ -330,7 +347,7 @@ func splitUint64(unum uint64) (int, []byte) {
 			byte((0x0000FF00000000 & unum) >> 32),
 			byte((0x000000FF000000 & unum) >> 24),
 			byte((0x00000000FF0000 & unum) >> 16),
-			byte((0xFF000000000000 & unum) >> 8),
+			byte((0x0000000000FF00 & unum) >> 8),
 			byte(0x000000000000FF & unum),
 		}
 	} else {

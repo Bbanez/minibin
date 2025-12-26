@@ -1,0 +1,29 @@
+[
+    {
+        "name": "Obj2Arr",
+        "props": [
+            {
+                "name": "items",
+                "typ": "object",
+                "ref": "obj-2.Obj2",
+                "required": true,
+                "array": true
+            }
+        ]
+    },
+    {
+        "name": "Obj2",
+        "props": [
+            {
+                "name": "key",
+                "typ": "string",
+                "required": true
+            },
+            {
+                "name": "value",
+                "typ": "f32",
+                "required": true
+            }
+        ]
+    }
+]

@@ -1,0 +1,19 @@
+[
+    {
+        "name": "Enum1",
+        "enums": [
+            {
+                "name": "e1",
+                "value": "E1"
+            },
+            {
+                "name": "e2",
+                "value": "E2"
+            },
+            {
+                "name": "e3",
+                "value": "E3"
+            }
+        ]
+    }
+]

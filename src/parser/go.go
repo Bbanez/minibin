@@ -295,10 +295,10 @@ func parseObject(sch *schema.Schema, args *utils.Args) *ParserOutputItem {
 				setPropFn += fmt.Sprintf(
 					""+
 						"    case %d:\n"+
-						"        d := v.(string)\n"+
+						"        d := v.([]byte)\n"+
 						"        obj, err := Unpack%s(d)\n"+
 						"        if err == nil {\n"+
-						"            o.%s = obj\n"+
+						"            o.%s = *obj\n"+
 						"        }\n"+
 						"",
 					i, prop.GoName, typ,
@@ -310,7 +310,7 @@ func parseObject(sch *schema.Schema, args *utils.Args) *ParserOutputItem {
 				prop.Typ, sch.RPath, i,
 			))
 		}
-		if !prop.Required && prop.Typ != "enum" {
+		if (!prop.Required && prop.Typ != "enum") || (prop.Array && prop.Typ == "object") {
 			typ = "*" + typ
 		}
 		if prop.Array {

@@ -1,5 +1,17 @@
 [
     {
+        "name": "Obj1Arr",
+        "props": [
+            {
+                "name": "items",
+                "typ": "object",
+                "ref": "obj-1.Obj1",
+                "required": true,
+                "array": true
+            }
+        ]
+    },
+    {
         "name": "Obj1",
         "props": [
             {
@@ -25,6 +37,17 @@
                 "required": true
             },
             {
+                "name": "i64",
+                "typ": "i64",
+                "required": true
+            },
+            {
+                "name": "i64Arr",
+                "typ": "i64",
+                "array": true,
+                "required": true
+            },
+            {
                 "name": "u32",
                 "typ": "u32",
                 "required": true
@@ -34,6 +57,65 @@
                 "typ": "u32",
                 "array": true,
                 "required": true
+            },
+            {
+                "name": "u64",
+                "typ": "u64",
+                "required": true
+            },
+            {
+                "name": "u64Arr",
+                "typ": "u64",
+                "array": true,
+                "required": true
+            },
+            {
+                "name": "f32",
+                "typ": "f32",
+                "required": true
+            },
+            {
+                "name": "f32Arr",
+                "typ": "f32",
+                "array": true,
+                "required": true
+            },
+            {
+                "name": "f64",
+                "typ": "f64",
+                "required": true
+            },
+            {
+                "name": "f64Arr",
+                "typ": "f64",
+                "array": true,
+                "required": true
+            },
+            {
+                "name": "obj2",
+                "typ": "object",
+                "ref": "obj-2.Obj2",
+                "required": true
+            },
+            {
+                "name": "obj2Arr",
+                "typ": "object",
+                "ref": "obj-2.Obj2",
+                "required": true,
+                "array": true
+            },
+            {
+                "name": "enum1",
+                "typ": "enum",
+                "ref": "enum-1.Enum1",
+                "required": true
+            },
+            {
+                "name": "enum1Arr",
+                "typ": "enum",
+                "ref": "enum-1.Enum1",
+                "required": true,
+                "array": true
             }
         ]
     }
