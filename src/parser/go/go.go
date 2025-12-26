@@ -1,18 +1,19 @@
-package parser
+package parser_go
 
 import (
 	"fmt"
 	"strings"
 
+	p "github.com/bbanez/minibin/src/parser"
 	"github.com/bbanez/minibin/src/schema"
 	"github.com/bbanez/minibin/src/utils"
 )
 
-func GoParser(schemas []*schema.Schema, args *utils.Args) []*ParserOutputItem {
-	outputItems := []*ParserOutputItem{
+func Parse(schemas []*schema.Schema, args *utils.Args) []*p.ParserOutputItem {
+	outputItems := []*p.ParserOutputItem{
 		{
 			Path:    "minibin__common.go",
-			Content: GoCommon,
+			Content: Common,
 		},
 	}
 	for i := range schemas {
@@ -28,8 +29,8 @@ func GoParser(schemas []*schema.Schema, args *utils.Args) []*ParserOutputItem {
 	return outputItems
 }
 
-func parseEnum(sch *schema.Schema, args *utils.Args) *ParserOutputItem {
-	output := ParserOutputItem{}
+func parseEnum(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
+	output := p.ParserOutputItem{}
 	cont := "package minibin\n\nimport \"fmt\"\n\n"
 	cont += fmt.Sprintf("type %s string\n\nconst (\n", sch.PascalName)
 	toStrFn := fmt.Sprintf(
@@ -92,8 +93,8 @@ func parseEnum(sch *schema.Schema, args *utils.Args) *ParserOutputItem {
 	return &output
 }
 
-func parseObject(sch *schema.Schema, args *utils.Args) *ParserOutputItem {
-	output := ParserOutputItem{}
+func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
+	output := p.ParserOutputItem{}
 	oStruct := "type " + sch.PascalName + " struct {\n"
 	fns := ""
 	packFn := fmt.Sprintf(

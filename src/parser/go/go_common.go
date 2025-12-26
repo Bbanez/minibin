@@ -1,6 +1,6 @@
-package parser
+package parser_go
 
-const GoCommon string = `package minibin
+const Common string = `package minibin
 
 import (
 	"encoding/binary"

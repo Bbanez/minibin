@@ -14,7 +14,7 @@ func TestPack(t *testing.T) {
 	items := minibin.Obj1Arr{
 		Items: []*minibin.Obj1{},
 	}
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 500; i++ {
 		item := &minibin.Obj1{
 			Str:    fmt.Sprintf("item_%d", i),
 			I32:    int32(i * 10),
