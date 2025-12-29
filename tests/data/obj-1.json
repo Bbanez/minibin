@@ -92,6 +92,17 @@
                 "required": true
             },
             {
+                "name": "bool",
+                "typ": "bool",
+                "required": true
+            },
+            {
+                "name": "boolArr",
+                "typ": "bool",
+                "array": true,
+                "required": true
+            },
+            {
                 "name": "obj2",
                 "typ": "object",
                 "ref": "obj-2.Obj2",
