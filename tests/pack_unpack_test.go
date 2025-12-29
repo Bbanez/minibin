@@ -14,7 +14,7 @@ func TestPack(t *testing.T) {
 	items := minibin.Obj1Arr{
 		Items: []*minibin.Obj1{},
 	}
-	for i := 0; i < 500; i++ {
+	for i := 0; i < 1; i++ {
 		item := &minibin.Obj1{
 			Str:    fmt.Sprintf("item_%d", i),
 			I32:    int32(i * 10),
@@ -50,11 +50,10 @@ func TestPack(t *testing.T) {
 	}
 	timeOffset := time.Now().UnixNano()
 	s1 := utils.SerializeJson(items)
-	fmt.Println("JS time", time.Now().UnixNano()-timeOffset)
+	fmt.Println("JS time", time.Now().UnixNano()-timeOffset, "-> size:", len(s1))
 	timeOffset = time.Now().UnixNano()
 	bytes := items.Pack()
-	fmt.Println("MB time", time.Now().UnixNano()-timeOffset)
-	fmt.Println("Packed size:", len(bytes), len(s1))
+	fmt.Println("MB time", time.Now().UnixNano()-timeOffset, "-> size:", len(bytes))
 	timeOffset = time.Now().UnixNano()
 	e, err := minibin.UnpackObj1Arr(bytes)
 	fmt.Println("MB Unpack time", time.Now().UnixNano()-timeOffset)
