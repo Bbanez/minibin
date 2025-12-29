@@ -83,7 +83,7 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 		sch.PascalName,
 	)
 	pmData := fmt.Sprintf(
-		"    private pm: Array<(o: %s, v: unknown) => void> = [\n",
+		"const pm: Array<(o: %s, v: unknown) => void> = [\n",
 		sch.PascalName,
 	)
 	constructorData := fmt.Sprintf(
@@ -255,21 +255,27 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			}
 			pmData += fmt.Sprintf(
 				""+
-					"        (o, v) => {\n"+
-					"            const [res, err] = %s.unpack(v as number[])\n"+
-					"            if (err == null && res != null) {\n"+
-					"                %s;\n"+
-					"            }\n"+
-					"        },\n",
+					"    (o, v) => {\n"+
+					"        const [res, err] = %s.unpack(v as number[])\n"+
+					"        if (err == null && res != null) {\n"+
+					"            %s;\n"+
+					"        }\n"+
+					"    },\n",
 				objTyp, op,
 			)
 		} else {
+			op := ""
+			if prop.Array {
+				op = fmt.Sprintf("o.%s.push(v as %s)", prop.Name, tsTyp)
+			} else {
+				op = fmt.Sprintf("o.%s = v as %s", prop.Name, tsTyp)
+			}
 			pmData += fmt.Sprintf(
 				""+
-					"        (o, v) => {\n"+
-					"            o.%s = v as %s;\n"+
-					"        },\n",
-				prop.Name, tsTyp,
+					"    (o, v) => {\n"+
+					"        %s;\n"+
+					"    },\n",
+				op,
 			)
 		}
 		constructorData += fmt.Sprintf(
@@ -289,7 +295,7 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 		)
 	}
 	typData += "}\n"
-	pmData += "    ];\n\n"
+	pmData += "];\n\n"
 	constructorData += "    }\n"
 	emptyData += "" +
 		"        });\n" +
@@ -297,32 +303,32 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 	packData += "" +
 		"        return buf;\n" +
 		"    }\n"
-	classData += pmData + "\n" +
+	classData +=
 		constructorData + "\n" +
-		emptyData + "\n" +
-		getSetData +
-		fmt.Sprintf("\n"+
-			"    setPropAtPos(pos: number, v: unknown): void {\n"+
-			"        if(!this.pm[pos]) {\n"+
-			"            return;\n"+
-			"        }\n"+
-			"        this.pm[pos](this, v);\n"+
-			"    }\n\n") +
-		packData + "\n" +
-		fmt.Sprintf(""+
-			"    static unpack(buffer: number[]): [%s | null, Error | null] {\n"+
-			"        const result = this.newEmpty();\n"+
-			"        const err = Minibin.unpack(result, buffer);\n"+
-			"        if (err) return [null, err]\n"+
-			"        return [result, null];\n"+
-			"    }\n",
-			sch.PascalName,
-		) +
-		"}\n"
+			emptyData + "\n" +
+			getSetData +
+			fmt.Sprintf("\n"+
+				"    setPropAtPos(pos: number, v: unknown): void {\n"+
+				"        if(!pm[pos]) {\n"+
+				"            return;\n"+
+				"        }\n"+
+				"        pm[pos](this, v);\n"+
+				"    }\n\n") +
+			packData + "\n" +
+			fmt.Sprintf(""+
+				"    static unpack(buffer: number[]): [%s | null, Error | null] {\n"+
+				"        const result = this.newEmpty();\n"+
+				"        const err = Minibin.unpack(result, buffer);\n"+
+				"        if (err) return [null, err]\n"+
+				"        return [result, null];\n"+
+				"    }\n",
+				sch.PascalName,
+			) +
+			"}\n"
 	for imp := range imports {
 		output.Content += imp
 	}
 	output.Content += "import { Minibin } from './minibin__common';\n\n" +
-		typData + "\n" + classData
+		typData + "\n" + pmData + "\n" + classData
 	return &output
 }

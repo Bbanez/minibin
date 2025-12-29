@@ -1,7 +1,6 @@
 package parser_ts
 
-const Common = `
-export interface UnpackageEntry {
+const Common = `export interface UnpackageEntry {
     setPropAtPos(pos: number, value: unknown): void;
 }
 
@@ -157,7 +156,7 @@ export class Minibin {
     }
 
     static packInt32(buffer: number[], num: number, pos: number): void {
-        const [lenD, data] = splitUint32(uint32(num));
+        const [lenD, data] = splitUint32(num);
         const typLenD = mergeDataTypeAndLenDataLen(2, lenD);
         buffer.push(pos, typLenD, ...data);
     }
@@ -170,7 +169,7 @@ export class Minibin {
         lenD++;
         const data = mergeUint32(lenD, buffer.slice(atByte, atByte + lenD));
         atByte += lenD;
-        return [int32(data), atByte];
+        return [data, atByte];
     }
 
     static packInt64(buffer: number[], num: bigint, pos: number): void {
@@ -287,7 +286,7 @@ export class Minibin {
     }
 
     static packObject(buffer: number[], data: number[], pos: number): void {
-        const [lenD, dataLenBytes] = splitUint32(uint32(data.length));
+        const [lenD, dataLenBytes] = splitUint32((data.length));
         const typLenD = mergeDataTypeAndLenDataLen(9, lenD);
         buffer.push(pos, typLenD, ...dataLenBytes, ...data);
     }
@@ -325,20 +324,12 @@ export class Minibin {
     }
 }
 
-function uint32(num: number): number {
-    return num >>> 0;
-}
-function int32(num: number): number {
-    return num | 0;
-}
-
 function uint64(num: bigint): bigint {
-    return num & 0xffffffffffffffffn;
+    return num < 0n ? (0xFFFFFFFFn - num) : num;
 }
 function int64(num: bigint): bigint {
-    const maxInt64 = BigInt('0x7FFFFFFFFFFFFFFF');
-    if (num > maxInt64) {
-        return num - BigInt('0x10000000000000000');
+    if (num > 0xFFFFFFFFn) {
+        return (0xFFFFFFFFn - num);
     }
     return num;
 }
