@@ -35,7 +35,7 @@ func parseEnum(sch *schema.Schema) *p.ParserOutputItem {
 		Content: "",
 	}
 	enumData := fmt.Sprintf(""+
-		"export enum %s {\n",
+		"export type %s =\n",
 		sch.PascalName,
 	)
 	defaultValue := fmt.Sprintf(
@@ -52,17 +52,17 @@ func parseEnum(sch *schema.Schema) *p.ParserOutputItem {
 		}
 		if i == 0 {
 			defaultValue += fmt.Sprintf(
-				"    return %s.%s;\n",
-				sch.PascalName, enum.Name,
+				"    return '%s';\n",
+				val,
 			)
 		}
 		enumData += fmt.Sprintf(
-			"    %s = \"%s\",\n",
-			enum.Name, val,
+			"    | '%s'\n",
+			val,
 		)
 	}
 	defaultValue += "}\n"
-	enumData += "}\n\n"
+	enumData += "\n\n"
 	enumData += defaultValue
 	output.Content = enumData
 	return &output
@@ -163,7 +163,7 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			)
 		case "bool":
 			tsTyp = "boolean"
-			emptryValue = "boolean"
+			emptryValue = "false"
 			packStr = fmt.Sprintf(
 				""+
 					"    Minibin.packBool(buf, this.%s, %d);\n",
