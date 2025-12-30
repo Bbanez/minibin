@@ -24,6 +24,7 @@ languages.
 | 8     | bool   | 8   | 0              | 8         |
 | 9     | object | 8   | 32             | N         |
 | 10    | enum   | 8   | 8              | N         |
+| 11    | bytes  | 8   | 8              | N         |
 
 ### String encoding
 

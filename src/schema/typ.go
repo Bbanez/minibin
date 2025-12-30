@@ -11,6 +11,7 @@ var SchemaPropAllowedTypes = []string{
 	"bool",
 	"object",
 	"enum",
+	"bytes",
 }
 
 type SchemaProp struct {

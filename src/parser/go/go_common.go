@@ -75,6 +75,10 @@ func Unpack[T UnpackabeEntry](o T, b []byte) error {
 			data, next := UnpackString(bytes, atByte, lenD)
 			atByte = next
 			o.SetPropAtPos(pos, data)
+		case 11:
+			data, next := UnpackBytes(bytes, atByte, lenD)
+			atByte = next
+			o.SetPropAtPos(pos, data)
 		default:
 			return errors.New("Invalid datatype")
 		}
@@ -248,6 +252,22 @@ func UnpackEnum(b []byte, atByte int, lenD int) (string, int) {
 	atByte += lenD
 	dataBytes := b[atByte : atByte+dataLen]
 	return string(dataBytes), atByte + dataLen
+}
+
+func PackBytes(s []byte, pos int) []byte {
+	lenD, dataLenBytes := splitUint32(uint32(len(s)))
+	typLenD := mergeDataTypeAndLenDataLen(11, byte(lenD))
+	result := []byte{byte(pos), typLenD}
+	result = append(result, dataLenBytes...)
+	result = append(result, s...)
+	return result
+}
+func UnpackBytes(b []byte, atByte int, lenD int) ([]byte, int) {
+	lenD++
+	dataLen := int(mergeUint32(lenD, b[atByte:atByte+lenD]))
+	atByte += lenD
+	dataBytes := b[atByte : atByte+dataLen]
+	return dataBytes, atByte + dataLen
 }
 
 func mergeDataTypeAndLenDataLen(typ byte, lenD byte) byte {
