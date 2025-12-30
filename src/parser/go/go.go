@@ -88,7 +88,7 @@ func parseEnum(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 	}
 	output.Path = strings.ReplaceAll(sch.RPath, ".", "_")
 	output.Path = strings.ReplaceAll(output.Path, "/", "_")
-	output.Path += ".go"
+	output.Path = "enum_" + output.Path + ".go"
 	output.Content = cont + toStrFn + fromStrFn
 	return &output
 }
@@ -302,9 +302,17 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 						"            o.%s = *obj\n"+
 						"        }\n"+
 						"",
-					i, prop.GoName, typ,
+					i, typ, prop.GoName,
 				)
 			}
+		case "bytes":
+			typ = "[]byte"
+			if prop.Required {
+				packFn += packWrapperRequired("PackBytes", prop.GoName, i, prop.Array, "")
+			} else {
+				packFn += packWrapperOptional("PackBytes", prop.GoName, i, prop.Array, "")
+			}
+			setPropFn += setPropWrapperNormal(prop.GoName, typ, i, prop.Array, prop.Required)
 		default:
 			panic(fmt.Errorf(
 				"Invalid type '%s' found in: %s.props[%d]",
@@ -392,7 +400,7 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 	}
 	output.Path = strings.ReplaceAll(sch.RPath, ".", "_")
 	output.Path = strings.ReplaceAll(output.Path, "/", "_")
-	output.Path += ".go"
+	output.Path = "obj_" + output.Path + ".go"
 	output.Content = "package minibin\n\n"
 	output.Content += oStruct + fns + setPropFn + packFn + unpackFn
 	return &output
