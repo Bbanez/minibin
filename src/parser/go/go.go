@@ -110,6 +110,12 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 		sch.PascalName,
 	)
 
+	newFn := fmt.Sprintf(
+		"func New%s(\n",
+		sch.PascalName,
+	)
+	newFnBody := ""
+
 	packWrapperRequired := func(name string, propName string, pos int, arr bool, callFn string) string {
 		if arr {
 			return fmt.Sprintf(
@@ -128,12 +134,18 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 		)
 	}
 
-	packWrapperOptional := func(name string, propName string, pos int, arr bool, callFn string) string {
+	packWrapperOptional := func(
+		name string,
+		propName string,
+		pos int,
+		arr bool,
+		callFn string,
+	) string {
+		ptr := ""
+		if callFn == "" {
+			ptr = "*"
+		}
 		if arr {
-			ptr := ""
-			if callFn == "" {
-				ptr = "*"
-			}
 			return fmt.Sprintf(""+
 				"    for i := range o.%s {\n"+
 				"        item := o.%s[i]\n"+
@@ -148,11 +160,11 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 		}
 		return fmt.Sprintf(""+
 			"    if o.%s != nil {\n"+
-			"        result = append(result, %s(*o.%s%s, %d)...)\n"+
+			"        result = append(result, %s(%so.%s%s, %d)...)\n"+
 			"    } else {\n"+
 			"        result = append(result, 0)\n"+
 			"    }\n",
-			propName, name, propName, callFn, pos,
+			propName, name, ptr, propName, callFn, pos,
 		)
 	}
 
@@ -293,16 +305,20 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 					i, typ, prop.GoName, prop.GoName,
 				)
 			} else {
+				deref := ""
+				if prop.Required {
+					deref = "*"
+				}
 				setPropFn += fmt.Sprintf(
 					""+
 						"    case %d:\n"+
 						"        d := v.([]byte)\n"+
 						"        obj, err := Unpack%s(d)\n"+
 						"        if err == nil {\n"+
-						"            o.%s = *obj\n"+
+						"            o.%s = %sobj\n"+
 						"        }\n"+
 						"",
-					i, typ, prop.GoName,
+					i, typ, prop.GoName, deref,
 				)
 			}
 		case "bytes":
@@ -397,11 +413,24 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			prop.GoName+strings.Repeat(" ", nameDelta),
 			1,
 		)
+		newFn += fmt.Sprintf(
+			"    %s%s%s,\n",
+			prop.Name, strings.Repeat(" ", nameDelta), prop.GoTyp,
+		)
+		newFnBody += fmt.Sprintf(
+			"    o.%s = %s\n",
+			prop.GoName, prop.Name,
+		)
 	}
+	newFn += fmt.Sprintf(
+		") *%s {\n    o := %s{}\n%s    return &o\n}\n\n",
+		sch.PascalName, sch.PascalName, newFnBody,
+	)
 	output.Path = strings.ReplaceAll(sch.RPath, ".", "_")
 	output.Path = strings.ReplaceAll(output.Path, "/", "_")
+	output.Path = strings.ReplaceAll(output.Path, "-", "_")
 	output.Path = "obj_" + output.Path + ".go"
 	output.Content = "package minibin\n\n"
-	output.Content += oStruct + fns + setPropFn + packFn + unpackFn
+	output.Content += oStruct + newFn + fns + setPropFn + packFn + unpackFn
 	return &output
 }
