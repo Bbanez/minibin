@@ -11,6 +11,7 @@ type Args struct {
 	Lang        string
 	PackageBase string
 	InjectBson  bool
+	Clear       bool
 }
 
 func GetArgs() Args {
@@ -20,6 +21,7 @@ func GetArgs() Args {
 		Lang:        "go",
 		PackageBase: "",
 		InjectBson:  false,
+		Clear:       false,
 	}
 	rawArgs := os.Args[1:]
 	i := 0
@@ -39,6 +41,8 @@ func GetArgs() Args {
 			args.PackageBase = rawArgs[i+1]
 		case "-bson":
 			args.InjectBson = true
+		case "-clear":
+			args.Clear = true
 		}
 		i += 2
 	}

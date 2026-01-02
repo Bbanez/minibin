@@ -8,7 +8,7 @@ import (
 
 type FS struct {
 	isWin    bool
-	slash    string
+	Slash    string
 	BasePath string
 	baseLen  int
 }
@@ -30,7 +30,7 @@ func NewFS(basePath *[]string) FS {
 	}
 	fs := FS{
 		isWin:    isWin,
-		slash:    slash,
+		Slash:    slash,
 		BasePath: bp,
 		baseLen:  len(strings.Split(bp, slash)),
 	}
@@ -39,7 +39,7 @@ func NewFS(basePath *[]string) FS {
 }
 
 func (fs *FS) Path(path ...string) string {
-	return fs.BasePath + fs.slash + strings.Join(path, fs.slash)
+	return fs.BasePath + fs.Slash + strings.Join(path, fs.Slash)
 }
 
 func (fs *FS) ToPath(path string) []string {
@@ -72,7 +72,7 @@ func (fs *FS) Exists(path ...string) bool {
 }
 
 func (fs *FS) mkdirIfNotExists(path string, skipRoot bool) {
-	parts := strings.Split(path, fs.slash)
+	parts := strings.Split(path, fs.Slash)
 	startAt := 0
 	if skipRoot {
 		startAt = fs.baseLen
@@ -82,7 +82,7 @@ func (fs *FS) mkdirIfNotExists(path string, skipRoot bool) {
 		if part == "" {
 			continue
 		}
-		path = strings.Join(parts[:i+1], fs.slash)
+		path = strings.Join(parts[:i+1], fs.Slash)
 		if !dirExists(path) {
 			os.Mkdir(path, 0755)
 		}
