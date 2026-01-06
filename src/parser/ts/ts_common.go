@@ -322,6 +322,26 @@ export class Minibin {
             atByte + dataLen,
         ];
     }
+
+    static packBytes(buffer: number[], data: number[], pos: number): void {
+        const [lenD, dataLenBytes] = splitUint32(data.length);
+        const typLenD = mergeDataTypeAndLenDataLen(11, lenD);
+        buffer.push(pos, typLenD, ...dataLenBytes, ...data);
+    }
+    static unpackBytes(
+        buffer: number[],
+        atByte: number,
+        lenD: number,
+    ): [number[], number] {
+        lenD++;
+        const dataLen = mergeUint32(lenD, buffer.slice(atByte, atByte + lenD));
+        atByte += lenD;
+        const dataBytes = buffer.slice(atByte, atByte + dataLen);
+        return [
+            dataBytes,
+            atByte + dataLen,
+        ];
+    }
 }
 
 function uint64(num: bigint): bigint {

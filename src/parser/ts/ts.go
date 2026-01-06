@@ -75,7 +75,7 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 	}
 	imports := map[string]bool{}
 	typData := fmt.Sprintf(
-		"export interface %sType {\n",
+		"export interface %sT {\n",
 		sch.PascalName,
 	)
 	classData := fmt.Sprintf(
@@ -87,8 +87,14 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 		sch.PascalName,
 	)
 	constructorData := fmt.Sprintf(
-		"    constructor(data: %sType) {\n",
+		"    constructor(data: %sT) {\n",
 		sch.PascalName,
+	)
+	copyData := fmt.Sprintf(
+		""+
+			"    copy(): %s {\n"+
+			"        return new %s({\n",
+		sch.PascalName, sch.PascalName,
 	)
 	emptyData := fmt.Sprintf(
 		"    static newEmpty(): %s {\n"+
@@ -170,12 +176,32 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 				prop.Name, i,
 			)
 		case "object":
+			if prop.Array {
+				copyData += fmt.Sprintf(
+					"            %s: this.%s.map(e => e.copy()),\n",
+					prop.Name, prop.Name,
+				)
+			} else {
+				if prop.Required {
+					copyData += fmt.Sprintf(
+						"            %s: this.%s.copy(),\n",
+						prop.Name, prop.Name,
+					)
+				} else {
+					copyData += fmt.Sprintf(
+						"            %s: this.%s ? this.%s.copy() : undefined,\n",
+						prop.Name, prop.Name, prop.Name,
+					)
+				}
+			}
 			tsTyp = strings.Split(*prop.Ref, ".")[1]
-			imp := fmt.Sprintf(
-				"import { %s } from './obj_%s'\n",
-				tsTyp, tsTyp,
-			)
-			imports[imp] = true
+			if tsTyp != sch.PascalName {
+				imp := fmt.Sprintf(
+					"import { %s } from './obj_%s'\n",
+					tsTyp, tsTyp,
+				)
+				imports[imp] = true
+			}
 			emptryValue = fmt.Sprintf(
 				"%s.newEmpty()",
 				tsTyp,
@@ -187,11 +213,19 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			)
 		case "enum":
 			tsTyp = strings.Split(*prop.Ref, ".")[1]
-			imp := fmt.Sprintf(
-				"import { type %s, %sDefault } from './enum_%s'\n",
-				tsTyp, tsTyp, tsTyp,
-			)
-			imports[imp] = true
+			if prop.Required {
+				imp := fmt.Sprintf(
+					"import { type %s, %sDefault } from './enum_%s'\n",
+					tsTyp, tsTyp, tsTyp,
+				)
+				imports[imp] = true
+			} else {
+				imp := fmt.Sprintf(
+					"import type { %s } from './enum_%s'\n",
+					tsTyp, tsTyp,
+				)
+				imports[imp] = true
+			}
 			emptryValue = fmt.Sprintf(
 				"%sDefault()",
 				tsTyp,
@@ -201,8 +235,29 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 					"    Minibin.packEnum(buf, this.%s, %d);\n",
 				prop.Name, i,
 			)
+		case "bytes":
+			tsTyp = "number[]"
+			emptryValue = "[]"
+			packStr = fmt.Sprintf(
+				""+
+					"    Minibin.packBytes(buf, this.%s, %d);\n",
+				prop.Name, i,
+			)
 		}
-		if !prop.Required {
+		if prop.Typ != "object" {
+			if prop.Array {
+				copyData += fmt.Sprintf(
+					"            %s: this.%s.map(e => e),\n",
+					prop.Name, prop.Name,
+				)
+			} else {
+				copyData += fmt.Sprintf(
+					"            %s: this.%s,\n",
+					prop.Name, prop.Name,
+				)
+			}
+		}
+		if !prop.Required && !prop.Array {
 			tsTyp += " | undefined"
 			if !prop.Array {
 				emptryValue = "undefined"
@@ -294,6 +349,9 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			prop.GoName, tsTyp, prop.Name,
 		)
 	}
+	copyData += "" +
+		"        });\n" +
+		"    }\n\n"
 	typData += "}\n"
 	pmData += "];\n\n"
 	constructorData += "    }\n"
@@ -305,6 +363,7 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 		"    }\n"
 	classData +=
 		constructorData + "\n" +
+			copyData + "\n" +
 			emptyData + "\n" +
 			getSetData +
 			fmt.Sprintf("\n"+
