@@ -126,6 +126,17 @@ export class Minibin {
                         o.setPropAtPos(pos, data);
                     }
                     break;
+                case 11:
+                    {
+                        const [data, next] = this.unpackBytes(
+                            bytes,
+                            atByte,
+                            lenD,
+                        );
+                        atByte = next;
+                        o.setPropAtPos(pos, data);
+                    }
+                    break;
                 default: {
                     return new Error('Unknown data type: ' + typ);
                 }
@@ -190,7 +201,7 @@ export class Minibin {
     }
 
     static packUint32(buffer: number[], num: number, pos: number): void {
-        const [lenD, data] = splitUint32(num);
+        const [lenD, data] = splitUint32(num >>> 0);
         const typLenD = mergeDataTypeAndLenDataLen(4, lenD);
         buffer.push(pos, typLenD, ...data);
     }
@@ -203,7 +214,7 @@ export class Minibin {
         lenD++;
         const data = mergeUint32(lenD, buffer.slice(atByte, atByte + lenD));
         atByte += lenD;
-        return [data, atByte];
+        return [data >>> 0, atByte];
     }
 
     static packUint64(buffer: number[], num: bigint, pos: number): void {
@@ -286,7 +297,7 @@ export class Minibin {
     }
 
     static packObject(buffer: number[], data: number[], pos: number): void {
-        const [lenD, dataLenBytes] = splitUint32((data.length));
+        const [lenD, dataLenBytes] = splitUint32(data.length);
         const typLenD = mergeDataTypeAndLenDataLen(9, lenD);
         buffer.push(pos, typLenD, ...dataLenBytes, ...data);
     }
@@ -337,34 +348,31 @@ export class Minibin {
         const dataLen = mergeUint32(lenD, buffer.slice(atByte, atByte + lenD));
         atByte += lenD;
         const dataBytes = buffer.slice(atByte, atByte + dataLen);
-        return [
-            dataBytes,
-            atByte + dataLen,
-        ];
+        return [dataBytes, atByte + dataLen];
     }
 }
 
-function uint64(num: bigint): bigint {
-    return num < 0n ? (0xFFFFFFFFn - num) : num;
+export function uint64(num: bigint): bigint {
+    return num < 0n ? 0xffffffffn - num : num;
 }
-function int64(num: bigint): bigint {
-    if (num > 0xFFFFFFFFn) {
-        return (0xFFFFFFFFn - num);
+export function int64(num: bigint): bigint {
+    if (num > 0xffffffffn) {
+        return 0xffffffffn - num;
     }
     return num;
 }
 
-function mergeDataTypeAndLenDataLen(typ: number, lenD: number): number {
+export function mergeDataTypeAndLenDataLen(typ: number, lenD: number): number {
     return (lenD & 0xff) + ((typ & 0xff) << 4);
 }
 
-function unmergeDataTypeAndLenDataLen(b: number): [number, number] {
+export function unmergeDataTypeAndLenDataLen(b: number): [number, number] {
     const lenD = b & 0b00001111;
     const typ = (b & 0b11110000) >> 4;
     return [typ, lenD];
 }
 
-function splitUint32(unum: number): [number, number[]] {
+export function splitUint32(unum: number): [number, number[]] {
     let lenD: number;
     let b: number[];
     if (unum < 0xff) {
@@ -388,21 +396,19 @@ function splitUint32(unum: number): [number, number[]] {
     return [lenD, b];
 }
 
-function mergeUint32(lenD: number, bytes: number[]): number {
+export function mergeUint32(lenD: number, bytes: number[]): number {
     if (lenD == 1) {
         return bytes[0];
     } else if (lenD == 2) {
-        return bytes[1] << (8 + bytes[0]);
+        return (bytes[1] << 8) + bytes[0];
     } else if (lenD == 3) {
-        return (bytes[0] << (16 + bytes[1])) << (8 + bytes[2]);
+        return (bytes[0] << 16) + (bytes[1] << 8) + bytes[2];
     } else {
-        return (
-            ((bytes[0] << (24 + bytes[1])) << (16 + bytes[2])) << (8 + bytes[3])
-        );
+        return (bytes[0] << 24) + (bytes[1] << 16) + (bytes[2] << 8) + bytes[3];
     }
 }
 
-function splitUint64(unum: bigint): [number, number[]] {
+export function splitUint64(unum: bigint): [number, number[]] {
     if (unum < 0xff) {
         return [0, [Number(unum) & 0xff]];
     } else if (unum < 0xffff) {
@@ -478,11 +484,11 @@ function splitUint64(unum: bigint): [number, number[]] {
     }
 }
 
-function mergeUint64(lenD: number, bytes: number[]): bigint {
+export function mergeUint64(lenD: number, bytes: number[]): bigint {
     if (lenD == 1) {
         return BigInt(bytes[0]);
     } else if (lenD == 2) {
-        return BigInt(bytes[1] << (8 + bytes[0]));
+        return BigInt((bytes[1] << 8) + bytes[0]);
     } else if (lenD == 3) {
         return BigInt((bytes[0] << 16) + (bytes[1] << 8) + bytes[2]);
     } else if (lenD == 4) {

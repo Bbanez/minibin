@@ -88,7 +88,7 @@ func Unpack[T UnpackabeEntry](o T, b []byte) error {
 
 func PackString(s string, pos int) []byte {
 	data := []byte(s)
-	lenD, dataLenBytes := splitUint32(uint32(len(data)))
+	lenD, dataLenBytes := SplitUint32(uint32(len(data)))
 	typLenD := mergeDataTypeAndLenDataLen(1, byte(lenD))
 	result := []byte{byte(pos), typLenD}
 	result = append(result, dataLenBytes...)
@@ -104,7 +104,7 @@ func UnpackString(b []byte, atByte int, lenD int) (string, int) {
 }
 
 func PackInt32(num int32, pos int) []byte {
-	lenD, data := splitUint32(uint32(num))
+	lenD, data := SplitUint32(uint32(num))
 	typLenD := mergeDataTypeAndLenDataLen(2, byte(lenD))
 	result := []byte{byte(pos), typLenD}
 	result = append(result, data...)
@@ -119,7 +119,7 @@ func UnpackInt32(b []byte, atByte int, lenD int) (int32, int) {
 }
 
 func PackInt64(num int64, pos int) []byte {
-	lenD, data := splitUint64(uint64(num))
+	lenD, data := SplitUint64(uint64(num))
 	typLenD := mergeDataTypeAndLenDataLen(3, byte(lenD))
 	result := []byte{byte(pos), typLenD}
 	result = append(result, data...)
@@ -134,7 +134,7 @@ func UnpackInt64(b []byte, atByte int, lenD int) (int64, int) {
 }
 
 func PackUint32(num uint32, pos int) []byte {
-	lenD, data := splitUint32(num)
+	lenD, data := SplitUint32(num)
 	typLenD := mergeDataTypeAndLenDataLen(4, byte(lenD))
 	result := []byte{byte(pos), typLenD}
 	result = append(result, data...)
@@ -149,7 +149,7 @@ func UnpackUint32(b []byte, atByte int, lenD int) (uint32, int) {
 }
 
 func PackUint64(num uint64, pos int) []byte {
-	lenD, data := splitUint64(num)
+	lenD, data := SplitUint64(num)
 	typLenD := mergeDataTypeAndLenDataLen(5, byte(lenD))
 	result := []byte{byte(pos), typLenD}
 	result = append(result, data...)
@@ -222,7 +222,7 @@ func UnpackBool(b []byte, atByte int) (bool, int) {
 }
 
 func PackObject(data []byte, pos int) []byte {
-	lenD, dataLenBytes := splitUint32(uint32(len(data)))
+	lenD, dataLenBytes := SplitUint32(uint32(len(data)))
 	typLenD := mergeDataTypeAndLenDataLen(9, byte(lenD))
 	result := []byte{byte(pos), typLenD}
 	result = append(result, dataLenBytes...)
@@ -239,7 +239,7 @@ func UnpackObject(b []byte, atByte int, lenD int) ([]byte, int) {
 
 func PackEnum(s string, pos int) []byte {
 	data := []byte(s)
-	lenD, dataLenBytes := splitUint32(uint32(len(data)))
+	lenD, dataLenBytes := SplitUint32(uint32(len(data)))
 	typLenD := mergeDataTypeAndLenDataLen(10, byte(lenD))
 	result := []byte{byte(pos), typLenD}
 	result = append(result, dataLenBytes...)
@@ -255,7 +255,7 @@ func UnpackEnum(b []byte, atByte int, lenD int) (string, int) {
 }
 
 func PackBytes(s []byte, pos int) []byte {
-	lenD, dataLenBytes := splitUint32(uint32(len(s)))
+	lenD, dataLenBytes := SplitUint32(uint32(len(s)))
 	typLenD := mergeDataTypeAndLenDataLen(11, byte(lenD))
 	result := []byte{byte(pos), typLenD}
 	result = append(result, dataLenBytes...)
@@ -280,7 +280,7 @@ func unmergeDataTypeAndLenDataLen(b byte) (int, int) {
 	return int(typ), int(lenD)
 }
 
-func splitUint32(unum uint32) (int, []byte) {
+func SplitUint32(unum uint32) (int, []byte) {
 	var lenD int
 	var b []byte
 	if unum < 0xFF {
@@ -319,7 +319,7 @@ func mergeUint32(lenD int, bytes []byte) uint32 {
 	}
 }
 
-func splitUint64(unum uint64) (int, []byte) {
+func SplitUint64(unum uint64) (int, []byte) {
 	var lenD int
 	var b []byte
 	if unum < 0xFF {
