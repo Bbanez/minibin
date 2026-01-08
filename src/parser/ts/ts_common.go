@@ -400,7 +400,7 @@ export function mergeUint32(lenD: number, bytes: number[]): number {
     if (lenD == 1) {
         return bytes[0];
     } else if (lenD == 2) {
-        return (bytes[1] << 8) + bytes[0];
+        return (bytes[0] << 8) + bytes[1];
     } else if (lenD == 3) {
         return (bytes[0] << 16) + (bytes[1] << 8) + bytes[2];
     } else {

@@ -288,8 +288,10 @@ func SplitUint32(unum uint32) (int, []byte) {
 		b = []byte{byte(unum)}
 	} else if unum < 0xFFFF {
 		lenD = 1
-		b = make([]byte, lenD+1)
-		binary.LittleEndian.PutUint16(b, uint16(unum))
+		b = []byte{
+			byte((0xFF00 & unum) >> 8),
+			byte(0x00FF & unum),
+		}
 	} else if unum < 0xFFFFFF {
 		lenD = 2
 		b = []byte{
@@ -299,8 +301,12 @@ func SplitUint32(unum uint32) (int, []byte) {
 		}
 	} else {
 		lenD = 3
-		b = make([]byte, lenD+1)
-		binary.LittleEndian.PutUint32(b, uint32(unum))
+		b = []byte{
+			byte((0xFF0000 & unum) >> 24),
+			byte((0x00FF0000 & unum) >> 16),
+			byte((0x0000FF00 & unum) >> 8),
+			byte(0x000000FF & unum),
+		}
 	}
 	return lenD, b
 }
@@ -309,13 +315,17 @@ func mergeUint32(lenD int, bytes []byte) uint32 {
 	if lenD == 1 {
 		return uint32(bytes[0])
 	} else if lenD == 2 {
-		return uint32(binary.LittleEndian.Uint16(bytes))
+		return uint32(bytes[0])<<8 +
+			uint32(bytes[1])
 	} else if lenD == 3 {
 		return uint32(bytes[0])<<16 +
 			uint32(bytes[1])<<8 +
 			uint32(bytes[2])
 	} else {
-		return binary.LittleEndian.Uint32(bytes)
+		return uint32(bytes[0])<<24 +
+			uint32(bytes[1])<<16 +
+			uint32(bytes[2])<<8 +
+			uint32(bytes[3])
 	}
 }
 
@@ -327,8 +337,10 @@ func SplitUint64(unum uint64) (int, []byte) {
 		b = []byte{byte(unum)}
 	} else if unum < 0xFFFF {
 		lenD = 1
-		b = make([]byte, lenD+1)
-		binary.LittleEndian.PutUint16(b, uint16(unum))
+		b = []byte{
+			byte((0xFF00 & unum) >> 8),
+			byte(0x00FF & unum),
+		}
 	} else if unum < 0xFFFFFF {
 		lenD = 2
 		b = []byte{
@@ -339,7 +351,12 @@ func SplitUint64(unum uint64) (int, []byte) {
 	} else if unum < 0xFFFFFFFF {
 		lenD = 3
 		b = make([]byte, lenD+1)
-		binary.LittleEndian.PutUint32(b, uint32(unum))
+		b = []byte{
+			byte((0xFF0000 & unum) >> 24),
+			byte((0x00FF0000 & unum) >> 16),
+			byte((0x0000FF00 & unum) >> 8),
+			byte(0x000000FF & unum),
+		}
 	} else if unum < 0xFFFFFFFFFF {
 		lenD = 4
 		b = []byte{
@@ -372,8 +389,16 @@ func SplitUint64(unum uint64) (int, []byte) {
 		}
 	} else {
 		lenD = 7
-		b = make([]byte, lenD+1)
-		binary.LittleEndian.PutUint64(b, uint64(unum))
+		b = []byte{
+			byte((0xFF000000000000 & unum) >> 56),
+			byte((0x00FF000000000000 & unum) >> 48),
+			byte((0x0000FF0000000000 & unum) >> 40),
+			byte((0x000000FF00000000 & unum) >> 32),
+			byte((0x00000000FF000000 & unum) >> 24),
+			byte((0x0000000000FF0000 & unum) >> 16),
+			byte((0x000000000000FF00 & unum) >> 8),
+			byte(0x00000000000000FF & unum),
+		}
 	}
 	return lenD, b
 }
@@ -382,11 +407,12 @@ func mergeUint64(lenD int, bytes []byte) uint64 {
 	if lenD == 1 {
 		return uint64(bytes[0])
 	} else if lenD == 2 {
-		return uint64(binary.LittleEndian.Uint16(bytes))
-	} else if lenD == 3 {
 		return uint64(bytes[0])<<16 +
 			uint64(bytes[1])<<8 +
 			uint64(bytes[2])
+	} else if lenD == 3 {
+		return uint64(bytes[0])<<8 +
+			uint64(bytes[1])
 	} else if lenD == 4 {
 		return uint64(binary.LittleEndian.Uint32(bytes))
 	} else if lenD == 5 {
@@ -411,7 +437,14 @@ func mergeUint64(lenD int, bytes []byte) uint64 {
 			uint64(bytes[5])<<8 +
 			uint64(bytes[6])
 	} else {
-		return binary.LittleEndian.Uint64(bytes)
+		return uint64(bytes[0])<<56 +
+			uint64(bytes[1])<<48 +
+			uint64(bytes[2])<<40 +
+			uint64(bytes[3])<<32 +
+			uint64(bytes[4])<<24 +
+			uint64(bytes[5])<<16 +
+			uint64(bytes[6])<<8 +
+			uint64(bytes[7])
 	}
 }
 `
