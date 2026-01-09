@@ -4,7 +4,7 @@ const Common string = `package minibin
 
 import (
 	"encoding/binary"
-	"errors"
+	"fmt"
 	"math"
 )
 
@@ -17,10 +17,11 @@ func Decompress(compressed []byte) ([]byte, error) {
 }
 
 type UnpackabeEntry interface {
-	SetPropAtPos(pos int, value any)
+	SetPropAtPos(pos int, value any, level string)
+	GetPropNameAtPos(pos int) string
 }
 
-func Unpack[T UnpackabeEntry](o T, b []byte) error {
+func Unpack[T UnpackabeEntry](o T, b []byte, level string) error {
 	bytes, err := Decompress(b)
 	if err != nil {
 		return err
@@ -31,6 +32,8 @@ func Unpack[T UnpackabeEntry](o T, b []byte) error {
 		atByte += 1
 		typ, lenD := unmergeDataTypeAndLenDataLen(bytes[atByte])
 		atByte += 1
+		propName := o.GetPropNameAtPos(pos)
+		lvl := level + "." + propName
 		switch typ {
 		case 0:
 			atByte++
@@ -38,49 +41,52 @@ func Unpack[T UnpackabeEntry](o T, b []byte) error {
 		case 1:
 			data, next := UnpackString(bytes, atByte, lenD)
 			atByte = next
-			o.SetPropAtPos(pos, data)
+			o.SetPropAtPos(pos, data, lvl)
 		case 2:
 			data, next := UnpackInt32(bytes, atByte, lenD)
 			atByte = next
-			o.SetPropAtPos(pos, data)
+			o.SetPropAtPos(pos, data, lvl)
 		case 3:
 			data, next := UnpackInt64(bytes, atByte, lenD)
 			atByte = next
-			o.SetPropAtPos(pos, data)
+			o.SetPropAtPos(pos, data, lvl)
 		case 4:
 			data, next := UnpackUint32(bytes, atByte, lenD)
 			atByte = next
-			o.SetPropAtPos(pos, data)
+			o.SetPropAtPos(pos, data, lvl)
 		case 5:
 			data, next := UnpackUint64(bytes, atByte, lenD)
 			atByte = next
-			o.SetPropAtPos(pos, data)
+			o.SetPropAtPos(pos, data, lvl)
 		case 6:
 			data, next := UnpackFloat32(bytes, atByte, lenD)
 			atByte = next
-			o.SetPropAtPos(pos, data)
+			o.SetPropAtPos(pos, data, lvl)
 		case 7:
 			data, next := UnpackFloat64(bytes, atByte, lenD)
 			atByte = next
-			o.SetPropAtPos(pos, data)
+			o.SetPropAtPos(pos, data, lvl)
 		case 8:
 			data, next := UnpackBool(bytes, atByte)
 			atByte = next
-			o.SetPropAtPos(pos, data)
+			o.SetPropAtPos(pos, data, lvl)
 		case 9:
 			data, next := UnpackObject(bytes, atByte, lenD)
 			atByte = next
-			o.SetPropAtPos(pos, data)
+			o.SetPropAtPos(pos, data, lvl)
 		case 10:
 			data, next := UnpackString(bytes, atByte, lenD)
 			atByte = next
-			o.SetPropAtPos(pos, data)
+			o.SetPropAtPos(pos, data, lvl)
 		case 11:
 			data, next := UnpackBytes(bytes, atByte, lenD)
 			atByte = next
-			o.SetPropAtPos(pos, data)
+			o.SetPropAtPos(pos, data, lvl)
 		default:
-			return errors.New("Invalid datatype")
+			return fmt.Errorf(
+				"Invalid datatype %s",
+				lvl,
+			)
 		}
 	}
 	return nil

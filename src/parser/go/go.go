@@ -104,7 +104,14 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 	)
 	setPropFn := fmt.Sprintf(
 		"\n"+
-			"func (o *%s) SetPropAtPos(pos int, v any) {\n"+
+			"func (o *%s) SetPropAtPos(pos int, v any, level string) {\n"+
+			"    switch pos {\n"+
+			"",
+		sch.PascalName,
+	)
+	getPropNameFn := fmt.Sprintf(
+		"\n"+
+			"func (o *%s) GetPropNameAtPos(pos int) string {\n"+
 			"    switch pos {\n"+
 			"",
 		sch.PascalName,
@@ -151,8 +158,6 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 				"        item := o.%s[i]\n"+
 				"        if item != nil {\n"+
 				"            result = append(result, %s(%sitem%s, %d)...)\n"+
-				"        } else {\n"+
-				"            result = append(result, 0)\n"+
 				"        }\n"+
 				"    }\n",
 				propName, propName, name, ptr, callFn, pos,
@@ -161,8 +166,6 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 		return fmt.Sprintf(""+
 			"    if o.%s != nil {\n"+
 			"        result = append(result, %s(%so.%s%s, %d)...)\n"+
-			"    } else {\n"+
-			"        result = append(result, 0)\n"+
 			"    }\n",
 			propName, name, ptr, propName, callFn, pos,
 		)
@@ -297,7 +300,8 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 					""+
 						"    case %d:\n"+
 						"        d := v.([]byte)\n"+
-						"        obj, err := Unpack%s(d)\n"+
+						"        lvl := level+\".\"+o.GetPropNameAtPos(pos)\n"+
+						"        obj, err := Unpack%s(d, &lvl)\n"+
 						"        if err == nil {\n"+
 						"            o.%s = append(o.%s, obj)\n"+
 						"        }\n"+
@@ -313,7 +317,8 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 					""+
 						"    case %d:\n"+
 						"        d := v.([]byte)\n"+
-						"        obj, err := Unpack%s(d)\n"+
+						"        lvl := level+\".\"+o.GetPropNameAtPos(pos)\n"+
+						"        obj, err := Unpack%s(d, &lvl)\n"+
 						"        if err == nil {\n"+
 						"            o.%s = %sobj\n"+
 						"        }\n"+
@@ -335,6 +340,13 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 				prop.Typ, sch.RPath, i,
 			))
 		}
+		getPropNameFn += fmt.Sprintf(
+			""+
+				"    case %d:\n"+
+				"        return \"%s\"\n"+
+				"",
+			i, prop.Name,
+		)
 		if (!prop.Required && prop.Typ != "enum") || (prop.Array && prop.Typ == "object") {
 			typ = "*" + typ
 		}
@@ -374,6 +386,13 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			"    }\n" +
 			"}\n",
 	)
+	getPropNameFn += fmt.Sprintf(
+		"" +
+			"    default:\n" +
+			"        return \"__unknown__\"+\"[\"+string(pos)+\"]\"\n" +
+			"    }\n" +
+			"}\n",
+	)
 	packFn += fmt.Sprintf(
 		"" +
 			"    res, err := Compress(result)\n" +
@@ -385,15 +404,19 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 	)
 	unpackFn := fmt.Sprintf(
 		"\n"+
-			"func Unpack%s(b []byte) (*%s, error) {\n"+
+			"func Unpack%s(b []byte, level *string) (*%s, error) {\n"+
+			"    if level == nil {\n"+
+			"        l := \"%s\"\n"+
+			"        level = &l"+
+			"    }\n"+
 			"    result := %s{}\n"+
-			"    err := Unpack(&result, b)\n"+
+			"    err := Unpack(&result, b, *level)\n"+
 			"    if err != nil {\n"+
 			"       return nil, err\n"+
 			"    }\n"+
 			"    return &result, nil\n"+
 			"}\n",
-		sch.PascalName, sch.PascalName, sch.PascalName,
+		sch.PascalName, sch.PascalName, sch.PascalName, sch.PascalName,
 	)
 	oStruct += "}\n\n"
 	for i := range sch.Props {
@@ -431,6 +454,6 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 	output.Path = strings.ReplaceAll(output.Path, "-", "_")
 	output.Path = "obj_" + output.Path + ".go"
 	output.Content = "package minibin\n\n"
-	output.Content += oStruct + newFn + fns + setPropFn + packFn + unpackFn
+	output.Content += oStruct + newFn + fns + setPropFn + getPropNameFn + packFn + unpackFn
 	return &output
 }

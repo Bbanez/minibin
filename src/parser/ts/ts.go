@@ -376,12 +376,12 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			packData + "\n" +
 			fmt.Sprintf(""+
 				"    static unpack(buffer: number[]): [%s | null, Error | null] {\n"+
-				"        const result = this.newEmpty();\n"+
+				"        const result = %s.newEmpty();\n"+
 				"        const err = Minibin.unpack(result, buffer);\n"+
 				"        if (err) return [null, err]\n"+
 				"        return [result, null];\n"+
 				"    }\n",
-				sch.PascalName,
+				sch.PascalName, sch.PascalName,
 			) +
 			"}\n"
 	for imp := range imports {
