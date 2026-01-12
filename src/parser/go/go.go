@@ -15,6 +15,14 @@ func Parse(schemas []*schema.Schema, args *utils.Args) []*p.ParserOutputItem {
 			Path:    "minibin__common.go",
 			Content: Common,
 		},
+		{
+			Path:    "minibin__openapi_model.go",
+			Content: GoOpenApiModel,
+		},
+		{
+			Path:    "minibin__openapi_schema.go",
+			Content: GoOpenApiSchema,
+		},
 	}
 	for i := range schemas {
 		sch := schemas[i]
@@ -43,6 +51,14 @@ func parseEnum(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			"    switch v {\n",
 		sch.PascalName, sch.PascalName,
 	)
+	toOpenApi := fmt.Sprintf(
+		"\n"+
+			"func %sOpenApi() (string, OpenApiObjectSchema) {\n"+
+			"    return EnumToOpenApiSchema(\n"+
+			"        \"%s\",\n"+
+			"        []string{\n",
+		sch.PascalName, sch.PascalName,
+	)
 	upperName := utils.ToUpperSnakeCase(sch.PascalName)
 	longestNameLen := 1
 	for i := range sch.Enums {
@@ -54,6 +70,10 @@ func parseEnum(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 		} else {
 			value = enum.Name
 		}
+		toOpenApi += fmt.Sprintf(
+			"            \"%s\",\n",
+			value,
+		)
 		if len(enum.GoName) > longestNameLen {
 			longestNameLen = len(enum.GoName)
 		}
@@ -70,6 +90,10 @@ func parseEnum(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			value, enum.GoName,
 		)
 	}
+	toOpenApi += "" +
+		"        },\n" +
+		"    )\n" +
+		"}\n"
 	cont += ")\n\n"
 	toStrFn += "    default:\n        panic(fmt.Errorf(\"Invalid " + sch.PascalName + ": %s\", o))\n"
 	toStrFn += "    }\n}\n"
@@ -89,7 +113,7 @@ func parseEnum(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 	output.Path = strings.ReplaceAll(sch.RPath, ".", "_")
 	output.Path = strings.ReplaceAll(output.Path, "/", "_")
 	output.Path = "enum_" + output.Path + ".go"
-	output.Content = cont + toStrFn + fromStrFn
+	output.Content = cont + toStrFn + fromStrFn + toOpenApi
 	return &output
 }
 
