@@ -17,8 +17,8 @@ type Args struct {
 
 func GetArgs() Args {
 	args := Args{
-		Input:       "minibin-shemas",
-		Output:      []string{"minibin-output"},
+		Input:       "minibin-schemas",
+		Output:      []string{"src", "minibin"},
 		Lang:        "go",
 		PackageBase: "",
 		InjectBson:  false,
