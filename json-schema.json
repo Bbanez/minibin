@@ -1,0 +1,67 @@
+{
+    "title": "Minibin JSON schema",
+    "type": "object",
+    "properties": {
+        "name": {
+            "description": "Name of the object",
+            "type": "string"
+        },
+        "enums": {
+            "description": "Optionas for enum object",
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
+        "props": {
+            "description": "Properties of an object",
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "description": "Name of a property",
+                        "type": "string"
+                    },
+                    "typ": {
+                        "description": "Property type",
+                        "enum": [
+                            "string",
+                            "i32",
+                            "i64",
+                            "u32",
+                            "u64",
+                            "f32",
+                            "f64",
+                            "bool",
+                            "object",
+                            "enum",
+                            "bytes"
+                        ]
+                    },
+                    "ref": {
+                        "description": "If `typ` if enum or object `ref` must be provided with path to object that it if refering to",
+                        "type": "string"
+                    },
+                    "required": {
+                        "description": "Is this property required",
+                        "type": "boolean"
+                    },
+                    "array": {
+                        "description": "Is property array",
+                        "type": "boolean"
+                    },
+                    "bsonName": {
+                        "description": "Name of the property in BSON database",
+                        "type": "string"
+                    }
+                }
+            }
+        }
+    }
+}
