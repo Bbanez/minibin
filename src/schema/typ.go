@@ -15,6 +15,7 @@ var SchemaPropAllowedTypes = []string{
 }
 
 type SchemaProp struct {
+	Desc     string
 	Name     string
 	GoName   string
 	Typ      string

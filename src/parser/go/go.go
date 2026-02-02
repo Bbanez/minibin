@@ -392,9 +392,13 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 				bson = fmt.Sprintf(" bson:\"%s\"", prop.Name)
 			}
 		}
+		desc := "    "
+		if prop.Desc != "" {
+			desc = fmt.Sprintf("    // %s\n    ", prop.Desc)
+		}
 		oStruct += fmt.Sprintf(
-			"    %s$name%s$type`json:\"%s,omitempty\"%s`\n",
-			prop.GoName, typ, prop.Name, bson,
+			"%s%s$name%s$type`json:\"%s,omitempty\"%s`\n",
+			desc, prop.GoName, typ, prop.Name, bson,
 		)
 		fns += fmt.Sprintf(
 			"func (o *%s) Get%s() %s {\n    return o.%s\n}\n",

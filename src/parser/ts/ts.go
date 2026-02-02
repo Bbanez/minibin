@@ -292,13 +292,17 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 				prop.Name, packStr,
 			)
 		}
+		desc := "    "
+		if prop.Desc != "" {
+			desc = fmt.Sprintf("    // %s\n    ", prop.Desc)
+		}
 		typData += fmt.Sprintf(
-			"    %s: %s;\n",
-			prop.Name, tsTyp,
+			"%s%s: %s;\n",
+			desc, prop.Name, tsTyp,
 		)
 		classData += fmt.Sprintf(
-			"    %s: %s;\n",
-			prop.Name, tsTyp,
+			"%s%s: %s;\n",
+			desc, prop.Name, tsTyp,
 		)
 		if prop.Typ == "object" {
 			objTyp := strings.Split(*prop.Ref, ".")[1]
