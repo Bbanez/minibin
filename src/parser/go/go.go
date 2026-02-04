@@ -291,7 +291,7 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 						"    for i := range o.%s {\n"+
 						"        item := o.%s[i]\n"+
 						"        if item != nil {\n"+
-						"            result = append(result, PackFloat32(item, %d, %f)...)\n"+
+						"            result = append(result, PackFloat32(*item, %d, %f)...)\n"+
 						"        }\n"+
 						"    }\n",
 						prop.GoName, prop.GoName, i, prop.Decimals,
@@ -299,7 +299,7 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 				} else {
 					packFn += fmt.Sprintf(""+
 						"    if o.%s != nil {\n"+
-						"        result = append(result, PackFloat32(o.%s, %d, %f)...)\n"+
+						"        result = append(result, PackFloat32(*o.%s, %d, %f)...)\n"+
 						"    }\n",
 						prop.GoName, prop.GoName, i, prop.Decimals,
 					)
@@ -355,7 +355,7 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 						"    for i := range o.%s {\n"+
 						"        item := o.%s[i]\n"+
 						"        if item != nil {\n"+
-						"            result = append(result, PackFloat64(item, %d, %f)...)\n"+
+						"            result = append(result, PackFloat64(*item, %d, %f)...)\n"+
 						"        }\n"+
 						"    }\n",
 						prop.GoName, prop.GoName, i, prop.Decimals,
@@ -363,7 +363,7 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 				} else {
 					packFn += fmt.Sprintf(""+
 						"    if o.%s != nil {\n"+
-						"        result = append(result, PackFloat64(o.%s, %d, %f)...)\n"+
+						"        result = append(result, PackFloat64(*o.%s, %d, %f)...)\n"+
 						"    }\n",
 						prop.GoName, prop.GoName, i, prop.Decimals,
 					)
