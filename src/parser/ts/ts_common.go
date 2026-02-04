@@ -77,7 +77,7 @@ export class Minibin {
                     break;
                 case 6:
                     {
-                        const [data, next] = this.unpackFloat32(
+                        const [data, next] = this.unpackInt32(
                             bytes,
                             atByte,
                             lenD,
@@ -88,7 +88,7 @@ export class Minibin {
                     break;
                 case 7:
                     {
-                        const [data, next] = this.unpackFloat64(
+                        const [data, next] = this.unpackInt64(
                             bytes,
                             atByte,
                             lenD,
@@ -167,9 +167,14 @@ export class Minibin {
     }
 
     static packInt32(buffer: number[], num: number, pos: number): void {
+        let neg = 0;
+        if (num < 0) {
+            neg = 1;
+            num = -num;
+        }
         const [lenD, data] = splitUint32(num);
         const typLenD = mergeDataTypeAndLenDataLen(2, lenD);
-        buffer.push(pos, typLenD, ...data);
+        buffer.push(pos, typLenD, neg, ...data);
     }
     static unpackInt32(
         buffer: number[],
@@ -178,15 +183,22 @@ export class Minibin {
     ): [number, number] {
         // This is required because lenD == 0 represents 1 byte of data
         lenD++;
+        const neg = buffer[atByte];
+        atByte++;
         const data = mergeUint32(lenD, buffer.slice(atByte, atByte + lenD));
         atByte += lenD;
-        return [data, atByte];
+        return [neg == 1 ? -data : data, atByte];
     }
 
     static packInt64(buffer: number[], num: bigint, pos: number): void {
-        const [lenD, data] = splitUint64(uint64(num));
+        let neg = 0;
+        if (num < 0) {
+            neg = 1;
+            num = -num;
+        }
+        const [lenD, data] = splitUint64(num);
         const typLenD = mergeDataTypeAndLenDataLen(3, lenD);
-        buffer.push(pos, typLenD, ...data);
+        buffer.push(pos, typLenD, neg, ...data);
     }
     static unpackInt64(
         buffer: number[],
@@ -195,9 +207,11 @@ export class Minibin {
     ): [bigint, number] {
         // This is required because lenD == 0 represents 1 byte of data
         lenD++;
+        const neg = buffer[atByte];
+        atByte++;
         const data = mergeUint64(lenD, buffer.slice(atByte, atByte + lenD));
         atByte += lenD;
-        return [int64(data), atByte];
+        return [neg == 1 ? -data : data, atByte];
     }
 
     static packUint32(buffer: number[], num: number, pos: number): void {
@@ -234,45 +248,29 @@ export class Minibin {
         return [data, atByte];
     }
 
-    static packFloat32(buffer: number[], num: number, pos: number): void {
-        const typLenD = mergeDataTypeAndLenDataLen(6, 3);
-        const arr = new ArrayBuffer(4);
-        new DataView(arr).setFloat32(0, num, true);
-        const data = Array.from(new Uint8Array(arr));
-        buffer.push(pos, typLenD, ...data);
-    }
-    static unpackFloat32(
-        buffer: number[],
-        atByte: number,
-        lenD: number,
-    ): [number, number] {
-        lenD++;
-        const dataBytes = buffer.slice(atByte, atByte + lenD);
-        atByte += lenD;
-        const arr = new Uint8Array(dataBytes);
-        const data = new DataView(arr.buffer).getFloat32(0, true); // true for little-endian
-        return [parseFloat(data.toFixed(5)), atByte];
+    static packFloat32(buffer: number[], fnum: number, pos: number, decimals: number): void {
+        let num = fnum * decimals
+        let neg = 0;
+        if (num < 0) {
+            neg = 1;
+            num = -num;
+        }
+        const [lenD, data] = splitUint32(num);
+        const typLenD = mergeDataTypeAndLenDataLen(6, lenD);
+        buffer.push(pos, typLenD, neg, ...data);
     }
 
-    static packFloat64(buffer: number[], num: number, pos: number): void {
-        const typLenD = mergeDataTypeAndLenDataLen(7, 7);
-        const arr = new ArrayBuffer(8);
-        new DataView(arr).setFloat64(0, num, true);
-        const data = Array.from(new Uint8Array(arr));
-        buffer.push(pos, typLenD, ...data);
-    }
-    static unpackFloat64(
-        buffer: number[],
-        atByte: number,
-        lenD: number,
-    ): [number, number] {
-        lenD++;
-        const dataBytes = buffer.slice(atByte, atByte + lenD);
-        atByte += lenD;
-        const arr = new Uint8Array(dataBytes);
-        const view = new DataView(arr.buffer);
-        const data = view.getFloat64(0, true); // true for little-endian
-        return [data, atByte];
+    static packFloat64(buffer: number[], fnum: number, pos: number, decimals: number): void {
+        let num = BigInt(fnum * decimals)
+        let neg = 0;
+        if (num < 0) {
+            neg = 1;
+            num = -num;
+        }
+        const [lenD, data] = splitUint64(num);
+        const typLenD = mergeDataTypeAndLenDataLen(7, lenD);
+        buffer.push(pos, typLenD, neg, ...data);
+        return;
     }
 
     static packBool(buffer: number[], num: boolean, pos: number): void {
@@ -352,16 +350,6 @@ export class Minibin {
     }
 }
 
-export function uint64(num: bigint): bigint {
-    return num < 0n ? 0xffffffffn - num : num;
-}
-export function int64(num: bigint): bigint {
-    if (num > 0xffffffffn) {
-        return 0xffffffffn - num;
-    }
-    return num;
-}
-
 export function mergeDataTypeAndLenDataLen(typ: number, lenD: number): number {
     return (lenD & 0xff) + ((typ & 0xff) << 4);
 }
@@ -409,76 +397,75 @@ export function mergeUint32(lenD: number, bytes: number[]): number {
 }
 
 export function splitUint64(unum: bigint): [number, number[]] {
-    if (unum < 0xff) {
+    if (unum < 0xffn) {
         return [0, [Number(unum) & 0xff]];
-    } else if (unum < 0xffff) {
+    } else if (unum < 0xffffn) {
         const num = Number(unum);
         return [1, [(0xff00 & num) >> 8, 0x00ff & num]];
-    } else if (unum < 0xffffff) {
+    } else if (unum < 0xffffffn) {
         const num = Number(unum);
         return [
             2,
             [(0xff0000 & num) >> 16, (0x00ff00 & num) >> 8, 0x0000ff & num],
         ];
-    } else if (unum < 0xffffffff) {
-        const num = Number(unum);
+    } else if (unum < 0xffffffffn) {
         return [
             3,
             [
-                (0xff000000 & num) >> 24,
-                (0x00ff0000 & num) >> 16,
-                (0x0000ff00 & num) >> 8,
-                0x000000ff & num,
+                Number((0xff000000n & unum) >> 24n),
+                Number((0x00ff0000n & unum) >> 16n),
+                Number((0x0000ff00n & unum) >> 8n),
+                Number(0x000000ffn & unum),
             ],
         ];
-    } else if (unum < 0xffffffffff) {
+    } else if (unum < 0xffffffffffn) {
         return [
             4,
             [
-                Number((unum >> BigInt(32)) & 0xffn),
-                Number((unum >> BigInt(24)) & 0xffn),
-                Number((unum >> BigInt(16)) & 0xffn),
-                Number((unum >> BigInt(8)) & 0xffn),
-                Number(unum & 0xffn),
+                Number((0xFF00000000n & unum) >> 32n),
+                Number((0x00FF000000n & unum) >> 24n),
+                Number((0x0000FF0000n & unum) >> 16n),
+                Number((0x000000FF00n & unum) >> 8n),
+                Number(0x00000000FFn & unum),
             ],
         ];
-    } else if (unum < 0xffffffffffff) {
+    } else if (unum < 0xffffffffffffn) {
         return [
             5,
             [
-                Number((unum >> BigInt(40)) & 0xffn),
-                Number((unum >> BigInt(32)) & 0xffn),
-                Number((unum >> BigInt(24)) & 0xffn),
-                Number((unum >> BigInt(16)) & 0xffn),
-                Number((unum >> BigInt(8)) & 0xffn),
-                Number(unum & 0xffn),
+                Number((0xFF0000000000n & unum) >> 40n),
+                Number((0x00FF00000000n & unum) >> 32n),
+                Number((0x0000FF000000n & unum) >> 24n),
+                Number((0x000000FF0000n & unum) >> 16n),
+                Number((0x00000000FF00n & unum) >> 8n),
+                Number(0x0000000000FFn & unum),
             ],
         ];
     } else if (unum < 0xffffffffffffffn) {
         return [
             6,
             [
-                Number((unum >> BigInt(48)) & 0xffn),
-                Number((unum >> BigInt(40)) & 0xffn),
-                Number((unum >> BigInt(32)) & 0xffn),
-                Number((unum >> BigInt(24)) & 0xffn),
-                Number((unum >> BigInt(16)) & 0xffn),
-                Number((unum >> BigInt(8)) & 0xffn),
-                Number(unum & 0xffn),
+                Number((0xFF000000000000n & unum) >> 48n),
+                Number((0x00FF0000000000n & unum) >> 40n),
+                Number((0x0000FF00000000n & unum) >> 32n),
+                Number((0x000000FF000000n & unum) >> 24n),
+                Number((0x00000000FF0000n & unum) >> 16n),
+                Number((0x0000000000FF00n & unum) >> 8n),
+                Number(0x000000000000FFn & unum),
             ],
         ];
     } else {
         return [
             7,
             [
-                Number((unum >> BigInt(52)) & 0xffn),
-                Number((unum >> BigInt(48)) & 0xffn),
-                Number((unum >> BigInt(40)) & 0xffn),
-                Number((unum >> BigInt(32)) & 0xffn),
-                Number((unum >> BigInt(24)) & 0xffn),
-                Number((unum >> BigInt(16)) & 0xffn),
-                Number((unum >> BigInt(8)) & 0xffn),
-                Number(unum & 0xffn),
+                Number((0xFF00000000000000n & unum) >> 56n),
+                Number((0x00FF000000000000n & unum) >> 48n),
+                Number((0x0000FF0000000000n & unum) >> 40n),
+                Number((0x000000FF00000000n & unum) >> 32n),
+                Number((0x00000000FF000000n & unum) >> 24n),
+                Number((0x0000000000FF0000n & unum) >> 16n),
+                Number((0x000000000000FF00n & unum) >> 8n),
+                Number(0x00000000000000FFn & unum),
             ],
         ];
     }
@@ -488,49 +475,52 @@ export function mergeUint64(lenD: number, bytes: number[]): bigint {
     if (lenD == 1) {
         return BigInt(bytes[0]);
     } else if (lenD == 2) {
-        return BigInt((bytes[1] << 8) + bytes[0]);
+        return BigInt((bytes[0] << 8) + bytes[1]);
     } else if (lenD == 3) {
         return BigInt((bytes[0] << 16) + (bytes[1] << 8) + bytes[2]);
     } else if (lenD == 4) {
-        return BigInt(
-            (bytes[0] << 24) + (bytes[0] << 16) + (bytes[1] << 8) + bytes[2],
+        return (
+            (BigInt(bytes[0]) << 24n) +
+            (BigInt(bytes[1]) << 16n) +
+            (BigInt(bytes[2]) << 8n) +
+            BigInt(bytes[3])
         );
     } else if (lenD == 5) {
         return (
-            (BigInt(bytes[0]) << BigInt(32)) +
-            (BigInt(bytes[1]) << BigInt(24)) +
-            (BigInt(bytes[2]) << BigInt(16)) +
-            (BigInt(bytes[3]) << BigInt(8)) +
+            (BigInt(bytes[0]) << 32n) +
+            (BigInt(bytes[1]) << 24n) +
+            (BigInt(bytes[2]) << 16n) +
+            (BigInt(bytes[3]) << 8n) +
             BigInt(bytes[4])
         );
     } else if (lenD == 6) {
         return (
-            (BigInt(bytes[0]) << BigInt(40)) +
-            (BigInt(bytes[1]) << BigInt(32)) +
-            (BigInt(bytes[2]) << BigInt(24)) +
-            (BigInt(bytes[3]) << BigInt(16)) +
-            (BigInt(bytes[4]) << BigInt(8)) +
+            (BigInt(bytes[0]) << 40n) +
+            (BigInt(bytes[1]) << 32n) +
+            (BigInt(bytes[2]) << 24n) +
+            (BigInt(bytes[3]) << 16n) +
+            (BigInt(bytes[4]) << 8n) +
             BigInt(bytes[5])
         );
     } else if (lenD == 7) {
         return (
-            (BigInt(bytes[0]) << BigInt(48)) +
-            (BigInt(bytes[1]) << BigInt(40)) +
-            (BigInt(bytes[2]) << BigInt(32)) +
-            (BigInt(bytes[3]) << BigInt(24)) +
-            (BigInt(bytes[4]) << BigInt(16)) +
-            (BigInt(bytes[5]) << BigInt(8)) +
+            (BigInt(bytes[0]) << 48n) +
+            (BigInt(bytes[1]) << 40n) +
+            (BigInt(bytes[2]) << 32n) +
+            (BigInt(bytes[3]) << 24n) +
+            (BigInt(bytes[4]) << 16n) +
+            (BigInt(bytes[5]) << 8n) +
             BigInt(bytes[6])
         );
     } else {
         return (
-            (BigInt(bytes[0]) << BigInt(52)) +
-            (BigInt(bytes[1]) << BigInt(48)) +
-            (BigInt(bytes[2]) << BigInt(40)) +
-            (BigInt(bytes[3]) << BigInt(32)) +
-            (BigInt(bytes[4]) << BigInt(24)) +
-            (BigInt(bytes[5]) << BigInt(16)) +
-            (BigInt(bytes[6]) << BigInt(8)) +
+            (BigInt(bytes[0]) << 52n) +
+            (BigInt(bytes[1]) << 48n) +
+            (BigInt(bytes[2]) << 40n) +
+            (BigInt(bytes[3]) << 32n) +
+            (BigInt(bytes[4]) << 24n) +
+            (BigInt(bytes[5]) << 16n) +
+            (BigInt(bytes[6]) << 8n) +
             BigInt(bytes[7])
         );
     }

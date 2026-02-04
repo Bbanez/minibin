@@ -154,19 +154,35 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 		case "f32":
 			tsTyp = "number"
 			emptryValue = "0"
-			packStr = fmt.Sprintf(
-				""+
-					"    Minibin.packFloat32(buf, this.%s, %d);\n",
-				prop.Name, i,
-			)
+			if prop.Array {
+				packStr = fmt.Sprintf(
+					""+
+						"    Minibin.packFloat32(buf, this.%s[i], %d, %d);\n",
+					prop.Name, i, uint32(prop.Decimals),
+				)
+			} else {
+				packStr = fmt.Sprintf(
+					""+
+						"    Minibin.packFloat32(buf, this.%s, %d, %d);\n",
+					prop.Name, i, uint32(prop.Decimals),
+				)
+			}
 		case "f64":
 			tsTyp = "number"
 			emptryValue = "0"
-			packStr = fmt.Sprintf(
-				""+
-					"    Minibin.packFloat64(buf, this.%s, %d);\n",
-				prop.Name, i,
-			)
+			if prop.Array {
+				packStr = fmt.Sprintf(
+					""+
+						"    Minibin.packFloat64(buf, this.%s[i], %d, %d);\n",
+					prop.Name, i, uint32(prop.Decimals),
+				)
+			} else {
+				packStr = fmt.Sprintf(
+					""+
+						"    Minibin.packFloat64(buf, this.%s, %d, %d);\n",
+					prop.Name, i, uint32(prop.Decimals),
+				)
+			}
 		case "bool":
 			tsTyp = "boolean"
 			emptryValue = "false"
@@ -263,8 +279,9 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 				emptryValue = "undefined"
 			}
 		}
+		tsTypArr := tsTyp
 		if prop.Array {
-			tsTyp = fmt.Sprintf("Array<%s>", tsTyp)
+			tsTypArr = fmt.Sprintf("Array<%s>", tsTyp)
 			emptryValue = "[]"
 			packData += fmt.Sprintf(
 				""+
@@ -298,11 +315,11 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 		}
 		typData += fmt.Sprintf(
 			"%s%s: %s;\n",
-			desc, prop.Name, tsTyp,
+			desc, prop.Name, tsTypArr,
 		)
 		classData += fmt.Sprintf(
 			"%s%s: %s;\n",
-			desc, prop.Name, tsTyp,
+			desc, prop.Name, tsTypArr,
 		)
 		if prop.Typ == "object" {
 			objTyp := strings.Split(*prop.Ref, ".")[1]
@@ -321,6 +338,40 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 					"        }\n"+
 					"    },\n",
 				objTyp, op,
+			)
+		} else if prop.Typ == "f32" || prop.Typ == "f64" {
+			op := ""
+			if prop.Array {
+				if prop.Typ == "f64" {
+					op = fmt.Sprintf(
+						"o.%s.push(Number(v as bigint) / %d)",
+						prop.Name, uint32(prop.Decimals),
+					)
+				} else {
+					op = fmt.Sprintf(
+						"o.%s.push((v as number) / %d)",
+						prop.Name, uint32(prop.Decimals),
+					)
+				}
+			} else {
+				if prop.Typ == "f64" {
+					op = fmt.Sprintf(
+						"o.%s = Number(v as bigint) / %d",
+						prop.Name, uint32(prop.Decimals),
+					)
+				} else {
+					op = fmt.Sprintf(
+						"o.%s = (v as number) / %d",
+						prop.Name, uint32(prop.Decimals),
+					)
+				}
+			}
+			pmData += fmt.Sprintf(
+				""+
+					"    (o, v) => {\n"+
+					"        %s;\n"+
+					"    },\n",
+				op,
 			)
 		} else {
 			op := ""
@@ -349,8 +400,8 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			"    set%s(v: %s): void {\n"+
 			"        this.%s = v;\n"+
 			"    }\n\n",
-			prop.GoName, tsTyp, prop.Name,
-			prop.GoName, tsTyp, prop.Name,
+			prop.GoName, tsTypArr, prop.Name,
+			prop.GoName, tsTypArr, prop.Name,
 		)
 	}
 	copyData += "" +
