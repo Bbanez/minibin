@@ -269,19 +269,131 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 		case "f32":
 			typ = "float32"
 			if prop.Required {
-				packFn += packWrapperRequired("PackFloat32", prop.GoName, i, prop.Array, "")
+				if prop.Array {
+					packFn += fmt.Sprintf(
+						""+
+							"    for i := range o.%s {\n"+
+							"        item := o.%s[i]\n"+
+							"        result = append(result, PackFloat32(item, %d, %f)...)\n"+
+							"    }\n",
+						prop.GoName, prop.GoName, i, prop.Decimals,
+					)
+				} else {
+					packFn += fmt.Sprintf(
+						""+
+							"    result = append(result, PackFloat32(o.%s, %d, %f)...)\n",
+						prop.GoName, i, prop.Decimals,
+					)
+				}
 			} else {
-				packFn += packWrapperOptional("PackFloat32", prop.GoName, i, prop.Array, "")
+				if prop.Array {
+					packFn += fmt.Sprintf(""+
+						"    for i := range o.%s {\n"+
+						"        item := o.%s[i]\n"+
+						"        if item != nil {\n"+
+						"            result = append(result, PackFloat32(item, %d, %f)...)\n"+
+						"        }\n"+
+						"    }\n",
+						prop.GoName, prop.GoName, i, prop.Decimals,
+					)
+				} else {
+					packFn += fmt.Sprintf(""+
+						"    if o.%s != nil {\n"+
+						"        result = append(result, PackFloat32(o.%s, %d, %f)...)\n"+
+						"    }\n",
+						prop.GoName, prop.GoName, i, prop.Decimals,
+					)
+				}
 			}
-			setPropFn += setPropWrapperNormal(prop.GoName, typ, i, prop.Array, prop.Required)
+			pointer := ""
+			if !prop.Required {
+				pointer = "&"
+			}
+			if prop.Array {
+				setPropFn += fmt.Sprintf(
+					""+
+						"    case %d:\n"+
+						"        ud := v.(int32)\n"+
+						"        d := float32(ud) / %f\n"+
+						"        o.%s = append(o.%s, %sd)\n"+
+						"",
+					i, prop.Decimals, prop.GoName, prop.GoName, pointer,
+				)
+			} else {
+				setPropFn += fmt.Sprintf(
+					""+
+						"    case %d:\n"+
+						"        ud := v.(int32)\n"+
+						"        d := float32(ud) / %f\n"+
+						"        o.%s = %sd\n"+
+						"",
+					i, prop.Decimals, prop.GoName, pointer,
+				)
+			}
 		case "f64":
 			typ = "float64"
 			if prop.Required {
-				packFn += packWrapperRequired("PackFloat64", prop.GoName, i, prop.Array, "")
+				if prop.Array {
+					packFn += fmt.Sprintf(
+						""+
+							"    for i := range o.%s {\n"+
+							"        item := o.%s[i]\n"+
+							"        result = append(result, PackFloat64(item, %d, %f)...)\n"+
+							"    }\n",
+						prop.GoName, prop.GoName, i, prop.Decimals,
+					)
+				} else {
+					packFn += fmt.Sprintf(
+						""+
+							"    result = append(result, PackFloat64(o.%s, %d, %f)...)\n",
+						prop.GoName, i, prop.Decimals,
+					)
+				}
 			} else {
-				packFn += packWrapperOptional("PackFloat64", prop.GoName, i, prop.Array, "")
+				if prop.Array {
+					packFn += fmt.Sprintf(""+
+						"    for i := range o.%s {\n"+
+						"        item := o.%s[i]\n"+
+						"        if item != nil {\n"+
+						"            result = append(result, PackFloat64(item, %d, %f)...)\n"+
+						"        }\n"+
+						"    }\n",
+						prop.GoName, prop.GoName, i, prop.Decimals,
+					)
+				} else {
+					packFn += fmt.Sprintf(""+
+						"    if o.%s != nil {\n"+
+						"        result = append(result, PackFloat64(o.%s, %d, %f)...)\n"+
+						"    }\n",
+						prop.GoName, prop.GoName, i, prop.Decimals,
+					)
+				}
 			}
-			setPropFn += setPropWrapperNormal(prop.GoName, typ, i, prop.Array, prop.Required)
+			pointer := ""
+			if !prop.Required {
+				pointer = "&"
+			}
+			if prop.Array {
+				setPropFn += fmt.Sprintf(
+					""+
+						"    case %d:\n"+
+						"        ud := v.(int64)\n"+
+						"        d := float64(ud) / %f\n"+
+						"        o.%s = append(o.%s, %sd)\n"+
+						"",
+					i, prop.Decimals, prop.GoName, prop.GoName, pointer,
+				)
+			} else {
+				setPropFn += fmt.Sprintf(
+					""+
+						"    case %d:\n"+
+						"        ud := v.(int64)\n"+
+						"        d := float64(ud) / %f\n"+
+						"        o.%s = %sd\n"+
+						"",
+					i, prop.Decimals, prop.GoName, pointer,
+				)
+			}
 		case "bool":
 			typ = "bool"
 			if prop.Required {

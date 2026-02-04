@@ -3,6 +3,7 @@ package schema
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"slices"
 	"strings"
 
@@ -78,6 +79,7 @@ func Read(path string) []*Schema {
 							),
 						)
 					}
+					prop.Decimals = float32(math.Pow10(int(prop.Decimals)))
 				}
 			}
 		}

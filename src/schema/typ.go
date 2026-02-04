@@ -20,6 +20,7 @@ type SchemaProp struct {
 	GoName   string
 	Typ      string
 	GoTyp    string
+	Decimals float32
 	Ref      *string
 	Required bool
 	Array    bool

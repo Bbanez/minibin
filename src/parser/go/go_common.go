@@ -3,9 +3,7 @@ package parser_go
 const Common string = `package minibin
 
 import (
-	"encoding/binary"
 	"fmt"
-	"math"
 )
 
 func Compress(data []byte) ([]byte, error) {
@@ -59,11 +57,11 @@ func Unpack[T UnpackabeEntry](o T, b []byte, level string) error {
 			atByte = next
 			o.SetPropAtPos(pos, data, lvl)
 		case 6:
-			data, next := UnpackFloat32(bytes, atByte, lenD)
+			data, next := UnpackInt32(bytes, atByte, lenD)
 			atByte = next
 			o.SetPropAtPos(pos, data, lvl)
 		case 7:
-			data, next := UnpackFloat64(bytes, atByte, lenD)
+			data, next := UnpackInt64(bytes, atByte, lenD)
 			atByte = next
 			o.SetPropAtPos(pos, data, lvl)
 		case 8:
@@ -169,40 +167,32 @@ func UnpackUint64(b []byte, atByte int, lenD int) (uint64, int) {
 	return data, atByte
 }
 
-func PackFloat32(num float32, pos int) []byte {
-	typLenD := mergeDataTypeAndLenDataLen(6, 3)
+func PackFloat32(fnum float32, pos int, decimals float32) []byte {
+	num := int32(fnum * decimals)
+	lenD, data := SplitUint32(uint32(num))
+	typLenD := mergeDataTypeAndLenDataLen(6, byte(lenD))
 	result := []byte{byte(pos), typLenD}
-	data := make([]byte, 4)
-	binary.LittleEndian.PutUint32(data, math.Float32bits(num))
 	result = append(result, data...)
 	return result
-}
-func UnpackFloat32(b []byte, atByte int, lenD int) (float32, int) {
-	lenD++
-	dataBytes := b[atByte : atByte+lenD]
-	atByte += lenD
-	data := math.Float32frombits(
-		binary.LittleEndian.Uint32(dataBytes),
-	)
-	return data, atByte
+	// lenD, data := SplitUint32(num)
+	// typLenD := mergeDataTypeAndLenDataLen(6, byte(lenD))
+	// result := []byte{byte(pos), typLenD}
+	// result = append(result, data...)
+	// return result
 }
 
-func PackFloat64(num float64, pos int) []byte {
-	typLenD := mergeDataTypeAndLenDataLen(7, 7)
+func PackFloat64(fnum float64, pos int, decimals float32) []byte {
+	num := uint64(fnum * float64(decimals))
+	lenD, data := SplitUint64(uint64(num))
+	typLenD := mergeDataTypeAndLenDataLen(7, byte(lenD))
 	result := []byte{byte(pos), typLenD}
-	data := make([]byte, 8)
-	binary.LittleEndian.PutUint64(data, math.Float64bits(num))
 	result = append(result, data...)
 	return result
-}
-func UnpackFloat64(b []byte, atByte int, lenD int) (float64, int) {
-	lenD++
-	dataBytes := b[atByte : atByte+lenD]
-	atByte += lenD
-	data := math.Float64frombits(
-		binary.LittleEndian.Uint64(dataBytes),
-	)
-	return data, atByte
+	// lenD, data := SplitUint64(num)
+	// typLenD := mergeDataTypeAndLenDataLen(7, byte(lenD))
+	// result := []byte{byte(pos), typLenD}
+	// result = append(result, data...)
+	// return result
 }
 
 func PackBool(num bool, pos int) []byte {
@@ -308,7 +298,7 @@ func SplitUint32(unum uint32) (int, []byte) {
 	} else {
 		lenD = 3
 		b = []byte{
-			byte((0xFF0000 & unum) >> 24),
+			byte((0xFF000000 & unum) >> 24),
 			byte((0x00FF0000 & unum) >> 16),
 			byte((0x0000FF00 & unum) >> 8),
 			byte(0x000000FF & unum),
@@ -358,7 +348,7 @@ func SplitUint64(unum uint64) (int, []byte) {
 		lenD = 3
 		b = make([]byte, lenD+1)
 		b = []byte{
-			byte((0xFF0000 & unum) >> 24),
+			byte((0xFF000000 & unum) >> 24),
 			byte((0x00FF0000 & unum) >> 16),
 			byte((0x0000FF00 & unum) >> 8),
 			byte(0x000000FF & unum),
@@ -396,7 +386,7 @@ func SplitUint64(unum uint64) (int, []byte) {
 	} else {
 		lenD = 7
 		b = []byte{
-			byte((0xFF000000000000 & unum) >> 56),
+			byte((0xFF00000000000000 & unum) >> 56),
 			byte((0x00FF000000000000 & unum) >> 48),
 			byte((0x0000FF0000000000 & unum) >> 40),
 			byte((0x000000FF00000000 & unum) >> 32),
@@ -413,14 +403,17 @@ func mergeUint64(lenD int, bytes []byte) uint64 {
 	if lenD == 1 {
 		return uint64(bytes[0])
 	} else if lenD == 2 {
+		return uint64(bytes[0])<<8 +
+			uint64(bytes[1])
+	} else if lenD == 3 {
 		return uint64(bytes[0])<<16 +
 			uint64(bytes[1])<<8 +
 			uint64(bytes[2])
-	} else if lenD == 3 {
-		return uint64(bytes[0])<<8 +
-			uint64(bytes[1])
 	} else if lenD == 4 {
-		return uint64(binary.LittleEndian.Uint32(bytes))
+		return uint64(bytes[0])<<24 +
+			uint64(bytes[1])<<16 +
+			uint64(bytes[2])<<8 +
+			uint64(bytes[3])
 	} else if lenD == 5 {
 		return uint64(bytes[0])<<32 +
 			uint64(bytes[1])<<24 +
