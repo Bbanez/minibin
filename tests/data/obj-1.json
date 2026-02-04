@@ -72,22 +72,26 @@
             {
                 "name": "f32",
                 "typ": "f32",
+                "decimals": 3,
                 "required": true
             },
             {
                 "name": "f32Arr",
                 "typ": "f32",
                 "array": true,
+                "decimals": 3,
                 "required": true
             },
             {
                 "name": "f64",
                 "typ": "f64",
+                "decimals": 6,
                 "required": true
             },
             {
                 "name": "f64Arr",
                 "typ": "f64",
+                "decimals": 6,
                 "array": true,
                 "required": true
             },
