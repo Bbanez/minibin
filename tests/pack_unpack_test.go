@@ -50,20 +50,20 @@ func TestPack(t *testing.T) {
 	}
 	timeOffset := time.Now().UnixNano()
 	s1 := utils.SerializeJson(items)
-	fmt.Println("JS time", time.Now().UnixNano()-timeOffset, "-> size:", len(s1))
+	fmt.Println("JS time", (time.Now().UnixNano()-timeOffset) / 1000, "us-> size:", len(s1))
 	timeOffset = time.Now().UnixNano()
 	bytes := items.Pack()
-	fmt.Println("MB time", time.Now().UnixNano()-timeOffset, "-> size:", len(bytes))
+	fmt.Println("MB time", (time.Now().UnixNano()-timeOffset) / 1000, "us-> size:", len(bytes))
 	timeOffset = time.Now().UnixNano()
 	e, err := m.UnpackObj1Arr(bytes, nil)
-	fmt.Println("MB Unpack time", time.Now().UnixNano()-timeOffset)
+	fmt.Println("MB Unpack time", (time.Now().UnixNano()-timeOffset) / 1000, "us")
 	if err != nil {
 		t.Fatal("Failed to unpack entry:", err)
 	}
 	timeOffset = time.Now().UnixNano()
 	tmp := m.Obj1Arr{}
 	err = json.Unmarshal([]byte(s1), &tmp)
-	fmt.Println("JS Unpack time", time.Now().UnixNano()-timeOffset)
+	fmt.Println("JS Unpack time", (time.Now().UnixNano()-timeOffset) / 1000, "us")
 	if err != nil {
 		t.Fatal("Failed to unmarshal json:", err)
 	}
