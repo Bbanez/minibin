@@ -108,32 +108,52 @@ func UnpackString(b []byte, atByte int, lenD int) (string, int) {
 }
 
 func PackInt32(num int32, pos int) []byte {
+	var neg byte = 0
+	if num < 0 {
+		neg = 1
+		num = -num
+	}
 	lenD, data := SplitUint32(uint32(num))
 	typLenD := mergeDataTypeAndLenDataLen(2, byte(lenD))
-	result := []byte{byte(pos), typLenD}
+	result := []byte{byte(pos), typLenD, neg}
 	result = append(result, data...)
 	return result
 }
 func UnpackInt32(b []byte, atByte int, lenD int) (int32, int) {
 	// This is required because lenD == 0 represents 1 byte of data
 	lenD++
+	neg := b[atByte]
+	atByte++
 	data := mergeUint32(lenD, b[atByte:atByte+lenD])
 	atByte += lenD
+	if neg == 1 {
+		return -int32(data), atByte
+	}
 	return int32(data), atByte
 }
 
 func PackInt64(num int64, pos int) []byte {
+	var neg byte = 0
+	if num < 0 {
+		neg = 1
+		num = -num
+	}
 	lenD, data := SplitUint64(uint64(num))
 	typLenD := mergeDataTypeAndLenDataLen(3, byte(lenD))
-	result := []byte{byte(pos), typLenD}
+	result := []byte{byte(pos), typLenD, neg}
 	result = append(result, data...)
 	return result
 }
 func UnpackInt64(b []byte, atByte int, lenD int) (int64, int) {
 	// This is required because lenD == 0 represents 1 byte of data
 	lenD++
+	neg := b[atByte]
+	atByte++
 	data := mergeUint64(lenD, b[atByte:atByte+lenD])
 	atByte += lenD
+	if neg == 1 {
+		return -int64(data), atByte
+	}
 	return int64(data), atByte
 }
 
@@ -169,30 +189,30 @@ func UnpackUint64(b []byte, atByte int, lenD int) (uint64, int) {
 
 func PackFloat32(fnum float32, pos int, decimals float32) []byte {
 	num := int32(fnum * decimals)
+	var neg byte = 0
+	if num < 0 {
+		neg = 1
+		num = -num
+	}
 	lenD, data := SplitUint32(uint32(num))
 	typLenD := mergeDataTypeAndLenDataLen(6, byte(lenD))
-	result := []byte{byte(pos), typLenD}
+	result := []byte{byte(pos), typLenD, neg}
 	result = append(result, data...)
 	return result
-	// lenD, data := SplitUint32(num)
-	// typLenD := mergeDataTypeAndLenDataLen(6, byte(lenD))
-	// result := []byte{byte(pos), typLenD}
-	// result = append(result, data...)
-	// return result
 }
 
 func PackFloat64(fnum float64, pos int, decimals float32) []byte {
-	num := uint64(fnum * float64(decimals))
+	num := int64(fnum * float64(decimals))
+	var neg byte = 0
+	if num < 0 {
+		neg = 1
+		num = -num
+	}
 	lenD, data := SplitUint64(uint64(num))
 	typLenD := mergeDataTypeAndLenDataLen(7, byte(lenD))
-	result := []byte{byte(pos), typLenD}
+	result := []byte{byte(pos), typLenD, neg}
 	result = append(result, data...)
 	return result
-	// lenD, data := SplitUint64(num)
-	// typLenD := mergeDataTypeAndLenDataLen(7, byte(lenD))
-	// result := []byte{byte(pos), typLenD}
-	// result = append(result, data...)
-	// return result
 }
 
 func PackBool(num bool, pos int) []byte {
