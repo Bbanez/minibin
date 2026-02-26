@@ -1,17 +1,5 @@
 [
     {
-        "name": "Obj1Arr",
-        "props": [
-            {
-                "name": "items",
-                "typ": "object",
-                "ref": "obj-1.Obj1",
-                "required": true,
-                "array": true
-            }
-        ]
-    },
-    {
         "name": "Obj1",
         "props": [
             {
@@ -96,7 +84,7 @@
                 "required": true
             },
             {
-                "name": "bool",
+                "name": "bol",
                 "typ": "bool",
                 "required": true
             },
@@ -129,6 +117,19 @@
                 "name": "enum1Arr",
                 "typ": "enum",
                 "ref": "enum-1.Enum1",
+                "required": true,
+                "array": true
+            }
+        ]
+    },
+
+    {
+        "name": "Obj1Arr",
+        "props": [
+            {
+                "name": "items",
+                "typ": "object",
+                "ref": "obj-1.Obj1",
                 "required": true,
                 "array": true
             }

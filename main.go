@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/bbanez/minibin/src/parser"
+	parser_cpp "github.com/bbanez/minibin/src/parser/cpp"
 	parser_go "github.com/bbanez/minibin/src/parser/go"
 	parser_ts "github.com/bbanez/minibin/src/parser/ts"
 	"github.com/bbanez/minibin/src/schema"
@@ -173,6 +174,8 @@ func main() {
 		output = parser_go.Parse(schemas, &args)
 	case "ts":
 		output = parser_ts.Parse(schemas, &args)
+	case "cpp":
+		output = parser_cpp.Parse(schemas, &args)
 	default:
 		panic(
 			fmt.Errorf("Invalid language provided: %s", args.Lang),

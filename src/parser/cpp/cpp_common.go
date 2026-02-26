@@ -11,7 +11,47 @@ public:
 @name newEmpty@name();
 @name unpack@name(const std::vector<uint8_t>* b, std::string* level);`
 
-var CommonFunctionsH = `
+var CPPClass = `@name::@name(@constructorArgs) {
+	@constructorBody
+}
+std::string @name::getPropNameAtPos(uint8_t pos) {
+	@posToPropName
+	return "__unknown__[" + std::to_string(pos) + "]";
+}
+@name newEmpty@name() {
+	return @name(@emptyConstructorArgs);
+}
+std::vector<uint8_t> @name::pack() {
+	std::vector<uint8_t> result;
+	@packProps
+	return result;
+}
+@name unpack@name(const std::vector<uint8_t>* b, std::string* level) {
+	if (level == nullptr) {
+		level = new std::string("@name");
+	}
+	@name result = newEmpty@name();
+	uint32_t atByte = 0;
+	while (atByte < b->size()) {
+        uint8_t pos = b->at(atByte);
+        atByte++;
+        auto [lenD, typ] = _unmergeDataTypeAndLenDataLen(b->at(atByte));
+        atByte++;
+        std::string propName = result.getPropNameAtPos(pos);
+        std::string lvl      = *level + "." + propName;
+		@unpackProps
+    }
+	return result;
+}`
+
+var CommonFunctionsH = `#ifndef MINIBIN_H
+#define MINIBIN_H
+
+#include <cstdint>
+#include <string>
+#include <tuple>
+#include <vector>
+
 uint8_t _mergeDataTypeAndLenDataLen(uint8_t typ, uint8_t lenD);
 std::tuple<uint8_t, uint8_t> _unmergeDataTypeAndLenDataLen(uint8_t b);
 
@@ -59,5 +99,4 @@ std::tuple<std::string, uint32_t> _unpackEnum(const std::vector<uint8_t>* b,
 
 std::vector<uint8_t> _packBytes(const std::vector<uint8_t>* data, uint8_t pos);
 std::tuple<std::vector<uint8_t>, uint32_t> _unpackBytes(
-    const std::vector<uint8_t>* b, uint32_t atByte, uint8_t lenD);
-	`
+	const std::vector<uint8_t>* b, uint32_t atByte, uint8_t lenD);`
