@@ -16,13 +16,13 @@
             {
                 "name": "i32",
                 "typ": "i32",
-                "required": true
+                "required": false
             },
             {
                 "name": "i32Arr",
                 "typ": "i32",
                 "array": true,
-                "required": true
+                "required": false
             },
             {
                 "name": "i64",
