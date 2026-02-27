@@ -121,6 +121,8 @@ func parseObject(sch *schema.Schema) (hClassFile, cppClassFile) {
 	aEmptyConstructorArgs := []string{}
 	aPackProps := []string{}
 	aUnpackProps := []string{}
+	aPrintStr := []string{}
+	aPrintPrep := []string{}
 	for i, prop := range sch.Props {
 		typ := ""
 		val := ""
@@ -159,6 +161,32 @@ func parseObject(sch *schema.Schema) (hClassFile, cppClassFile) {
 					"        atByte = ab;",
 				assignVal,
 			)
+			if prop.Array {
+				aPrintPrep = append(aPrintPrep, fmt.Sprintf(
+					""+
+						"    std::string %sStr = \"\";\n"+
+						"    for(int i = 0; i < this->%s.size(); i++) {\n"+
+						"        %sStr += this->%s[i];\n"+
+						"        if (i < this->%s.size() - 1) %sStr += \", \";\n"+
+						"    }",
+					prop.Name, prop.Name, prop.Name, prop.Name, prop.Name, prop.Name,
+				))
+			} else {
+				if prop.Required {
+					aPrintPrep = append(aPrintPrep, fmt.Sprintf(
+						""+
+							"    std::string %sStr = this->%s;",
+						prop.Name, prop.Name,
+					))
+				} else {
+					aPrintPrep = append(aPrintPrep, fmt.Sprintf(
+						""+
+							"    std::string %sStr = this->%s != nullptr ? *this->%s : \"null\";",
+						prop.Name, prop.Name, prop.Name,
+					))
+				}
+			}
+			aPrintStr = append(aPrintStr, fmt.Sprintf("indentStr + \"%s: \" + %sStr", prop.Name, prop.Name))
 		case "i32":
 			typ = "int32_t"
 			val = "0"
@@ -191,6 +219,32 @@ func parseObject(sch *schema.Schema) (hClassFile, cppClassFile) {
 					"        atByte = ab;",
 				assignVal,
 			)
+			if prop.Array {
+				aPrintPrep = append(aPrintPrep, fmt.Sprintf(
+					""+
+						"    std::string %sStr = \"\";\n"+
+						"    for(int i = 0; i < this->%s.size(); i++) {\n"+
+						"        %sStr += std::to_string(this->%s[i]);\n"+
+						"        if (i < this->%s.size() - 1) %sStr += \", \";\n"+
+						"    }",
+					prop.Name, prop.Name, prop.Name, prop.Name, prop.Name, prop.Name,
+				))
+			} else {
+				if prop.Required {
+					aPrintPrep = append(aPrintPrep, fmt.Sprintf(
+						""+
+							"    std::string %sStr = std::to_string(this->%s);",
+						prop.Name, prop.Name,
+					))
+				} else {
+					aPrintPrep = append(aPrintPrep, fmt.Sprintf(
+						""+
+							"    std::string %sStr = this->%s != nullptr ? std::to_string(*this->%s) : \"null\";",
+						prop.Name, prop.Name, prop.Name,
+					))
+				}
+			}
+			aPrintStr = append(aPrintStr, fmt.Sprintf("indentStr + \"%s: \" + %sStr", prop.Name, prop.Name))
 		case "i64":
 			typ = "int64_t"
 			val = "0"
@@ -219,6 +273,32 @@ func parseObject(sch *schema.Schema) (hClassFile, cppClassFile) {
 					"        atByte = ab;",
 				assignVal,
 			)
+			if prop.Array {
+				aPrintPrep = append(aPrintPrep, fmt.Sprintf(
+					""+
+						"    std::string %sStr = \"\";\n"+
+						"    for(int i = 0; i < this->%s.size(); i++) {\n"+
+						"        %sStr += std::to_string(this->%s[i]);\n"+
+						"        if (i < this->%s.size() - 1) %sStr += \", \";\n"+
+						"    }",
+					prop.Name, prop.Name, prop.Name, prop.Name, prop.Name, prop.Name,
+				))
+			} else {
+				if prop.Required {
+					aPrintPrep = append(aPrintPrep, fmt.Sprintf(
+						""+
+							"    std::string %sStr = std::to_string(this->%s);",
+						prop.Name, prop.Name,
+					))
+				} else {
+					aPrintPrep = append(aPrintPrep, fmt.Sprintf(
+						""+
+							"    std::string %sStr = this->%s != nullptr ? std::to_string(*this->%s) : \"null\";",
+						prop.Name, prop.Name, prop.Name,
+					))
+				}
+			}
+			aPrintStr = append(aPrintStr, fmt.Sprintf("indentStr + \"%s: \" + %sStr", prop.Name, prop.Name))
 		case "u32":
 			typ = "uint32_t"
 			val = "0"
@@ -247,6 +327,32 @@ func parseObject(sch *schema.Schema) (hClassFile, cppClassFile) {
 					"        atByte = ab;",
 				assignVal,
 			)
+			if prop.Array {
+				aPrintPrep = append(aPrintPrep, fmt.Sprintf(
+					""+
+						"    std::string %sStr = \"\";\n"+
+						"    for(int i = 0; i < this->%s.size(); i++) {\n"+
+						"        %sStr += std::to_string(this->%s[i]);\n"+
+						"        if (i < this->%s.size() - 1) %sStr += \", \";\n"+
+						"    }",
+					prop.Name, prop.Name, prop.Name, prop.Name, prop.Name, prop.Name,
+				))
+			} else {
+				if prop.Required {
+					aPrintPrep = append(aPrintPrep, fmt.Sprintf(
+						""+
+							"    std::string %sStr = std::to_string(this->%s);",
+						prop.Name, prop.Name,
+					))
+				} else {
+					aPrintPrep = append(aPrintPrep, fmt.Sprintf(
+						""+
+							"    std::string %sStr = this->%s != nullptr ? std::to_string(*this->%s) : \"null\";",
+						prop.Name, prop.Name, prop.Name,
+					))
+				}
+			}
+			aPrintStr = append(aPrintStr, fmt.Sprintf("indentStr + \"%s: \" + %sStr", prop.Name, prop.Name))
 		case "u64":
 			typ = "uint64_t"
 			val = "0"
@@ -275,6 +381,32 @@ func parseObject(sch *schema.Schema) (hClassFile, cppClassFile) {
 					"        atByte = ab;",
 				assignVal,
 			)
+			if prop.Array {
+				aPrintPrep = append(aPrintPrep, fmt.Sprintf(
+					""+
+						"    std::string %sStr = \"\";\n"+
+						"    for(int i = 0; i < this->%s.size(); i++) {\n"+
+						"        %sStr += std::to_string(this->%s[i]);\n"+
+						"        if (i < this->%s.size() - 1) %sStr += \", \";\n"+
+						"    }",
+					prop.Name, prop.Name, prop.Name, prop.Name, prop.Name, prop.Name,
+				))
+			} else {
+				if prop.Required {
+					aPrintPrep = append(aPrintPrep, fmt.Sprintf(
+						""+
+							"    std::string %sStr = std::to_string(this->%s);",
+						prop.Name, prop.Name,
+					))
+				} else {
+					aPrintPrep = append(aPrintPrep, fmt.Sprintf(
+						""+
+							"    std::string %sStr = this->%s != nullptr ? std::to_string(*this->%s) : \"null\";",
+						prop.Name, prop.Name, prop.Name,
+					))
+				}
+			}
+			aPrintStr = append(aPrintStr, fmt.Sprintf("indentStr + \"%s: \" + %sStr", prop.Name, prop.Name))
 		case "f32":
 			typ = "float"
 			val = "0.0f"
@@ -296,13 +428,39 @@ func parseObject(sch *schema.Schema) (hClassFile, cppClassFile) {
 			}
 			aUnpackProp = fmt.Sprintf(
 				""+
-					"        Tuple<uint32_t, uint32_t> r = _unpackUint32(b, atByte, lenD);\n"+
-					"		 uint32_t v = r.a;\n"+
+					"        Tuple<int32_t, uint32_t> r = _unpackInt32(b, atByte, lenD);\n"+
+					"		 int32_t v = r.a;\n"+
 					"		 uint32_t ab = r.b;\n"+
 					"        %s;\n"+
 					"        atByte = ab;",
 				assignVal,
 			)
+			if prop.Array {
+				aPrintPrep = append(aPrintPrep, fmt.Sprintf(
+					""+
+						"    std::string %sStr = \"\";\n"+
+						"    for(int i = 0; i < this->%s.size(); i++) {\n"+
+						"        %sStr += std::to_string(this->%s[i]);\n"+
+						"        if (i < this->%s.size() - 1) %sStr += \", \";\n"+
+						"    }",
+					prop.Name, prop.Name, prop.Name, prop.Name, prop.Name, prop.Name,
+				))
+			} else {
+				if prop.Required {
+					aPrintPrep = append(aPrintPrep, fmt.Sprintf(
+						""+
+							"    std::string %sStr = std::to_string(this->%s);",
+						prop.Name, prop.Name,
+					))
+				} else {
+					aPrintPrep = append(aPrintPrep, fmt.Sprintf(
+						""+
+							"    std::string %sStr = this->%s != nullptr ? std::to_string(*this->%s) : \"null\";",
+						prop.Name, prop.Name, prop.Name,
+					))
+				}
+			}
+			aPrintStr = append(aPrintStr, fmt.Sprintf("indentStr + \"%s: \" + %sStr", prop.Name, prop.Name))
 		case "f64":
 			typ = "double"
 			val = "0.0"
@@ -324,13 +482,39 @@ func parseObject(sch *schema.Schema) (hClassFile, cppClassFile) {
 			}
 			aUnpackProp = fmt.Sprintf(
 				""+
-					"        Tuple<uint64_t, uint32_t> r = _unpackUint64(b, atByte, lenD);\n"+
-					"		 uint64_t v = r.a;\n"+
+					"        Tuple<int64_t, uint32_t> r = _unpackInt64(b, atByte, lenD);\n"+
+					"		 int64_t v = r.a;\n"+
 					"		 uint32_t ab = r.b;\n"+
 					"        %s;\n"+
 					"        atByte = ab;",
 				assignVal,
 			)
+			if prop.Array {
+				aPrintPrep = append(aPrintPrep, fmt.Sprintf(
+					""+
+						"    std::string %sStr = \"\";\n"+
+						"    for(int i = 0; i < this->%s.size(); i++) {\n"+
+						"        %sStr += std::to_string(this->%s[i]);\n"+
+						"        if (i < this->%s.size() - 1) %sStr += \", \";\n"+
+						"    }",
+					prop.Name, prop.Name, prop.Name, prop.Name, prop.Name, prop.Name,
+				))
+			} else {
+				if prop.Required {
+					aPrintPrep = append(aPrintPrep, fmt.Sprintf(
+						""+
+							"    std::string %sStr = std::to_string(this->%s);",
+						prop.Name, prop.Name,
+					))
+				} else {
+					aPrintPrep = append(aPrintPrep, fmt.Sprintf(
+						""+
+							"    std::string %sStr = this->%s != nullptr ? std::to_string(*this->%s) : \"null\";",
+						prop.Name, prop.Name, prop.Name,
+					))
+				}
+			}
+			aPrintStr = append(aPrintStr, fmt.Sprintf("indentStr + \"%s: \" + %sStr", prop.Name, prop.Name))
 		case "bool":
 			typ = "bool"
 			val = "false"
@@ -359,6 +543,32 @@ func parseObject(sch *schema.Schema) (hClassFile, cppClassFile) {
 					"        atByte = ab;",
 				assignVal,
 			)
+			if prop.Array {
+				aPrintPrep = append(aPrintPrep, fmt.Sprintf(
+					""+
+						"    std::string %sStr = \"\";\n"+
+						"    for(int i = 0; i < this->%s.size(); i++) {\n"+
+						"        %sStr += std::to_string(this->%s[i]);\n"+
+						"        if (i < this->%s.size() - 1) %sStr += \", \";\n"+
+						"    }",
+					prop.Name, prop.Name, prop.Name, prop.Name, prop.Name, prop.Name,
+				))
+			} else {
+				if prop.Required {
+					aPrintPrep = append(aPrintPrep, fmt.Sprintf(
+						""+
+							"    std::string %sStr = std::to_string(this->%s);",
+						prop.Name, prop.Name,
+					))
+				} else {
+					aPrintPrep = append(aPrintPrep, fmt.Sprintf(
+						""+
+							"    std::string %sStr = this->%s != nullptr ? std::to_string(*this->%s) : \"null\";",
+						prop.Name, prop.Name, prop.Name,
+					))
+				}
+			}
+			aPrintStr = append(aPrintStr, fmt.Sprintf("indentStr + \"%s: \" + %sStr", prop.Name, prop.Name))
 		case "enum":
 			typ = strings.Split(*prop.Ref, ".")[1]
 			hFile.ParentCount++
@@ -388,6 +598,32 @@ func parseObject(sch *schema.Schema) (hClassFile, cppClassFile) {
 					"        atByte = ab;",
 				assignVal,
 			)
+			if prop.Array {
+				aPrintPrep = append(aPrintPrep, fmt.Sprintf(
+					""+
+						"    std::string %sStr = \"\";\n"+
+						"    for(int i = 0; i < this->%s.size(); i++) {\n"+
+						"        %sStr += %sToString(this->%s[i]);\n"+
+						"        if (i < this->%s.size() - 1) %sStr += \", \";\n"+
+						"    }",
+					prop.Name, prop.Name, prop.Name, typ, prop.Name, prop.Name, prop.Name,
+				))
+			} else {
+				if prop.Required {
+					aPrintPrep = append(aPrintPrep, fmt.Sprintf(
+						""+
+							"    std::string %sStr = %sToString(this->%s);",
+						prop.Name, typ, prop.Name,
+					))
+				} else {
+					aPrintPrep = append(aPrintPrep, fmt.Sprintf(
+						""+
+							"    std::string %sStr = this->%s != nullptr ? %sToString(*this->%s) : \"null\";",
+						prop.Name, prop.Name, typ, prop.Name,
+					))
+				}
+			}
+			aPrintStr = append(aPrintStr, fmt.Sprintf("indentStr + \"%s: \" + %sStr", prop.Name, prop.Name))
 		case "object":
 			typ = strings.Split(*prop.Ref, ".")[1]
 			hFile.ParentCount++
@@ -399,12 +635,12 @@ func parseObject(sch *schema.Schema) (hClassFile, cppClassFile) {
 				prop.Name, prop.Name, i, prop.Name, prop.Name,
 			)
 			assignVal := fmt.Sprintf(
-				"result.%s = unpack%s(v, &l)",
+				"result.%s = unpack%s(v, l)",
 				prop.Name, typ,
 			)
 			if prop.Array {
 				assignVal = fmt.Sprintf(
-					"result.%s.push_back(unpack%s(v, &l))",
+					"result.%s.push_back(unpack%s(v, l))",
 					prop.Name, typ,
 				)
 			}
@@ -418,6 +654,32 @@ func parseObject(sch *schema.Schema) (hClassFile, cppClassFile) {
 					"        atByte = ab;",
 				typ, assignVal,
 			)
+			if prop.Array {
+				aPrintPrep = append(aPrintPrep, fmt.Sprintf(
+					""+
+						"    std::string %sStr = \"\";\n"+
+						"    for(int i = 0; i < this->%s.size(); i++) {\n"+
+						"        %sStr += this->%s[i].print(indent * 2);\n"+
+						"        if (i < this->%s.size() - 1) %sStr += \", \";\n"+
+						"    }",
+					prop.Name, prop.Name, prop.Name, prop.Name, prop.Name, prop.Name,
+				))
+			} else {
+				if prop.Required {
+					aPrintPrep = append(aPrintPrep, fmt.Sprintf(
+						""+
+							"    std::string %sStr = this->%s.print(indent * 2);",
+						prop.Name, prop.Name,
+					))
+				} else {
+					aPrintPrep = append(aPrintPrep, fmt.Sprintf(
+						""+
+							"    std::string %sStr = this->%s != nullptr ? *this->%s.print(indent * 2) : \"null\";",
+						prop.Name, prop.Name, prop.Name,
+					))
+				}
+			}
+			aPrintStr = append(aPrintStr, fmt.Sprintf("indentStr + \"%s: \" + %sStr", prop.Name, prop.Name))
 		case "bytes":
 			typ = "std::vector<uint8_t>"
 			aPackProp = fmt.Sprintf(
@@ -445,6 +707,32 @@ func parseObject(sch *schema.Schema) (hClassFile, cppClassFile) {
 					"        atByte = ab;",
 				assignVal,
 			)
+			if prop.Array {
+				aPrintPrep = append(aPrintPrep, fmt.Sprintf(
+					""+
+						"    std::string %sStr = \"\";\n"+
+						"    for(int i = 0; i < this->%s.size(); i++) {\n"+
+						"        %sStr += std::to_string(this->%s[i]);\n"+
+						"        if (i < this->%s.size() - 1) %sStr += \", \";\n"+
+						"    }",
+					prop.Name, prop.Name, prop.Name, prop.Name, prop.Name, prop.Name,
+				))
+			} else {
+				if prop.Required {
+					aPrintPrep = append(aPrintPrep, fmt.Sprintf(
+						""+
+							"    std::string %sStr = std::to_string(this->%s);",
+						prop.Name, prop.Name,
+					))
+				} else {
+					aPrintPrep = append(aPrintPrep, fmt.Sprintf(
+						""+
+							"    std::string %sStr = this->%s != nullptr ? std::to_string(*this->%s) : \"null\";",
+						prop.Name, prop.Name, prop.Name,
+					))
+				}
+			}
+			aPrintStr = append(aPrintStr, fmt.Sprintf("indentStr + \"%s: \" + %sStr", prop.Name, prop.Name))
 		}
 		if prop.Array {
 			typ = "std::vector<" + typ + ">"
@@ -556,5 +844,7 @@ func parseObject(sch *schema.Schema) (hClassFile, cppClassFile) {
 	cFile.Content = strings.ReplaceAll(cFile.Content, "@emptyConstructorArgs", strings.Join(aEmptyConstructorArgs, "\n"))
 	cFile.Content = strings.ReplaceAll(cFile.Content, "@packProps", strings.Join(aPackProps, "\n"))
 	cFile.Content = strings.ReplaceAll(cFile.Content, "@unpackProps", strings.Join(aUnpackProps, "\n"))
+	cFile.Content = strings.ReplaceAll(cFile.Content, "@printPrep", strings.Join(aPrintPrep, "\n"))
+	cFile.Content = strings.ReplaceAll(cFile.Content, "@printStr", strings.Join(aPrintStr, " + \"\\n\" + "))
 	return hFile, cFile
 }

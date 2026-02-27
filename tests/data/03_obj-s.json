@@ -3,8 +3,8 @@
         "name": "ObjS",
         "props": [
             {
-                "name": "f64",
-                "typ": "f64",
+                "name": "value",
+                "typ": "u64",
                 "decimals": 6,
                 "required": true
             }

@@ -12,8 +12,9 @@ public:
 
 	std::string getPropNameAtPos(uint8_t pos);
     std::vector<uint8_t> pack();
+	std::string print(int indent = 4);
 };
-@name unpack@name(const std::vector<uint8_t>& b, std::string* level);`
+@name unpack@name(const std::vector<uint8_t>& b, std::string level = "@name");`
 
 var CClass = `
 // -----------------------------------------------------------------
@@ -34,10 +35,7 @@ std::vector<uint8_t> @name::pack() {
 @packProps
 	return result;
 }
-@name unpack@name(const std::vector<uint8_t>& b, std::string* level) {
-	if (level == nullptr) {
-		level = new std::string("@name");
-	}
+@name unpack@name(const std::vector<uint8_t>& b, std::string level) {
 	@name result = @name();
 	uint32_t atByte = 0;
 	while (atByte < b.size()) {
@@ -48,10 +46,15 @@ std::vector<uint8_t> @name::pack() {
 		uint8_t typ  = res.b;
         atByte++;
         std::string propName = result.getPropNameAtPos(pos);
-        std::string lvl      = *level + "." + propName;
+        std::string lvl      = level + "." + propName;
 @unpackProps
     }
 	return result;
+}
+std::string @name::print(int indent) {
+	std::string indentStr(indent, ' ');
+@printPrep
+	return std::string("@name {\n") + @printStr + "\n" + indentStr + "}";
 }`
 
 var HEnum = `
@@ -132,7 +135,7 @@ Tuple<uint64_t, uint32_t> _unpackUint64(const std::vector<uint8_t>& b,
 
 std::vector<uint8_t> _packFloat32(float num, uint8_t pos, float decimals);
 
-std::vector<uint8_t> _packFloat64(double num, uint8_t pos);
+std::vector<uint8_t> _packFloat64(double num, uint8_t pos, double decimals);
 
 std::vector<uint8_t> _packBool(bool num, uint8_t pos);
 Tuple<bool, uint32_t> _unpackBool(const std::vector<uint8_t>& b,
@@ -154,8 +157,10 @@ Tuple<std::vector<uint8_t>, uint32_t> _unpackBytes(
 var CommonFunctionsCPP = `#include "minibin.hpp"
 
 #include <cstdint>
+#include <cstdio>
 #include <stdexcept>
 #include <vector>
+#include <string>
 
 // ---------------------------------------------------------------------------
 // ---- Common functions for packing and unpacking data
@@ -385,7 +390,7 @@ Tuple<int64_t, uint32_t> _unpackInt64(const std::vector<uint8_t>& b,
     atByte++;
     std::vector<uint8_t> dataBytes(b.begin() + atByte,
                                    b.begin() + atByte + lenD);
-    uint32_t data = _mergeUint64(lenD, dataBytes);
+    uint64_t data = _mergeUint64(lenD, dataBytes);
     atByte += lenD;
     if (neg) {
         return Tuple<int64_t, uint32_t>(-int64_t(data), atByte);
@@ -441,7 +446,7 @@ std::vector<uint8_t> _packFloat32(float fnum, uint8_t pos, float decimals) {
     return result;
 }
 
-std::vector<uint8_t> _packFloat64(double fnum, uint8_t pos, float decimals) {
+std::vector<uint8_t> _packFloat64(double fnum, uint8_t pos, double decimals) {
     int64_t num = fnum * decimals;
     uint8_t neg = 0;
     if (num < 0) {

@@ -22,7 +22,7 @@
                 "name": "i32Arr",
                 "typ": "i32",
                 "array": true,
-                "required": false
+                "required": true
             },
             {
                 "name": "i64",
