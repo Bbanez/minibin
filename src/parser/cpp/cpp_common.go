@@ -43,7 +43,6 @@ std::vector<uint8_t> @name::pack() {
         atByte++;
         Tuple<uint8_t, uint8_t> res = _unmergeDataTypeAndLenDataLen(b[atByte]);
 		uint8_t lenD = res.a;
-		uint8_t typ  = res.b;
         atByte++;
         std::string propName = result.getPropNameAtPos(pos);
         std::string lvl      = level + "." + propName;

@@ -14,7 +14,7 @@ import (
 	"github.com/bbanez/minibin/src/utils"
 )
 
-const version = "v0.2.2"
+const version = "v0.3.0"
 
 type BuildOutputs struct {
 	Name     string
