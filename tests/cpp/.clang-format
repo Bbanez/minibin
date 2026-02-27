@@ -1,0 +1,24 @@
+Standard: Cpp11
+BasedOnStyle: Google
+IndentWidth: 4
+ColumnLimit: 80
+AccessModifierOffset: -4
+NamespaceIndentation: All
+BreakBeforeBraces: Custom
+AlignConsecutiveMacros: true
+AlignConsecutiveAssignments: true
+BraceWrapping:
+  AfterEnum: true
+  AfterStruct: true
+  AfterClass: false
+  SplitEmptyFunction: true
+  AfterControlStatement: false
+  AfterNamespace: false
+  AfterFunction: false
+  AfterUnion: true
+  AfterExternBlock: false
+  BeforeCatch: false
+  BeforeElse: false
+  SplitEmptyRecord: true
+  SplitEmptyNamespace: true
+

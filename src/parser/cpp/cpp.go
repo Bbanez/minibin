@@ -32,9 +32,9 @@ func Parse(schemas []*schema.Schema, args *utils.Args) []*p.ParserOutputItem {
 			hClassFiles = append(hClassFiles, &h)
 			cppClassFiles = append(cppClassFiles, &c)
 		} else if sch.Enums != nil {
-			h, c := parseEnim(sch)
+			h, c := parseEnum(sch)
 			hClassFiles = append(hClassFiles, &h)
-			cFile += c + "\n\n"
+			cppClassFiles = append(cppClassFiles, &c)
 		}
 	}
 	for _, hClassFile := range hClassFiles {
@@ -57,8 +57,7 @@ func Parse(schemas []*schema.Schema, args *utils.Args) []*p.ParserOutputItem {
 	return outputItems
 }
 
-func parseEnim(sch *schema.Schema) (hClassFile, string) {
-	cFile := ""
+func parseEnum(sch *schema.Schema) (hClassFile, cppClassFile) {
 	aName := sch.PascalName
 	aEnumValues := []string{}
 	hFile := hClassFile{
@@ -66,6 +65,13 @@ func parseEnim(sch *schema.Schema) (hClassFile, string) {
 		Content:     "",
 		ParentCount: 0,
 	}
+	cFile := cppClassFile{
+		Name:        aName,
+		Content:     "",
+		ParentCount: 0,
+	}
+	aEnumToStringCases := []string{}
+	aStringToEnumCases := []string{}
 	for _, enum := range sch.Enums {
 		var value string
 		if enum.Value != nil {
@@ -74,9 +80,25 @@ func parseEnim(sch *schema.Schema) (hClassFile, string) {
 			value = enum.Name
 		}
 		aEnumValues = append(aEnumValues, "    "+value)
+		aEnumToStringCases = append(aEnumToStringCases, fmt.Sprintf(
+			""+
+				"        case %s::%s:\n"+
+				"            return \"%s\";",
+			aName, value, value,
+		))
+		aStringToEnumCases = append(aStringToEnumCases, fmt.Sprintf(
+			""+
+				"        if (s == \"%s\") {\n"+
+				"            return %s::%s;\n"+
+				"        }",
+			value, aName, value,
+		))
 	}
-	hFile.Content = strings.ReplaceAll(HEnim, "@name", aName)
+	hFile.Content = strings.ReplaceAll(HEnum, "@name", aName)
 	hFile.Content = strings.ReplaceAll(hFile.Content, "@enumValues", strings.Join(aEnumValues, ",\n"))
+	cFile.Content = strings.ReplaceAll(CEnum, "@name", aName)
+	cFile.Content = strings.ReplaceAll(cFile.Content, "@enumToStringCases", strings.Join(aEnumToStringCases, "\n"))
+	cFile.Content = strings.ReplaceAll(cFile.Content, "@stringToEnumCases", strings.Join(aStringToEnumCases, "\n"))
 	return hFile, cFile
 }
 
@@ -119,18 +141,20 @@ func parseObject(sch *schema.Schema) (hClassFile, cppClassFile) {
 				ptr = "&"
 			}
 			assignVal := fmt.Sprintf(
-				"result.%s = %sv",
+				"result.%s = %sval",
 				prop.Name, ptr,
 			)
 			if prop.Array {
 				assignVal = fmt.Sprintf(
-					"result.%s.push_back(v)",
+					"result.%s.push_back(val)",
 					prop.Name,
 				)
 			}
 			aUnpackProp = fmt.Sprintf(
 				""+
-					"        auto [v, ab] = _unpackString(b, atByte, lenD);\n"+
+					"        Tuple<std::string, uint32_t> v = _unpackString(b, atByte, lenD);\n"+
+					"		 std::string val = v.a;\n"+
+					"		 uint32_t ab = v.b;\n"+
 					"		 %s;\n"+
 					"        atByte = ab;",
 				assignVal,
@@ -160,7 +184,9 @@ func parseObject(sch *schema.Schema) (hClassFile, cppClassFile) {
 			}
 			aUnpackProp = fmt.Sprintf(
 				""+
-					"        auto [v, ab] = _unpackInt32(b, atByte, lenD);\n"+
+					"        Tuple<int32_t, uint32_t> r = _unpackInt32(b, atByte, lenD);\n"+
+					"		 int32_t v = r.a;\n"+
+					"		 uint32_t ab = r.b;\n"+
 					"        %s;\n"+
 					"        atByte = ab;",
 				assignVal,
@@ -186,7 +212,9 @@ func parseObject(sch *schema.Schema) (hClassFile, cppClassFile) {
 			}
 			aUnpackProp = fmt.Sprintf(
 				""+
-					"        auto [v, ab] = _unpackInt64(b, atByte, lenD);\n"+
+					"        Tuple<int64_t, uint32_t> r = _unpackInt64(b, atByte, lenD);\n"+
+					"		 int64_t v = r.a;\n"+
+					"		 uint32_t ab = r.b;\n"+
 					"        %s;\n"+
 					"        atByte = ab;",
 				assignVal,
@@ -212,7 +240,9 @@ func parseObject(sch *schema.Schema) (hClassFile, cppClassFile) {
 			}
 			aUnpackProp = fmt.Sprintf(
 				""+
-					"        auto [v, ab] = _unpackUint32(b, atByte, lenD);\n"+
+					"        Tuple<uint32_t, uint32_t> r = _unpackUint32(b, atByte, lenD);\n"+
+					"		 uint32_t v = r.a;\n"+
+					"		 uint32_t ab = r.b;\n"+
 					"        %s;\n"+
 					"        atByte = ab;",
 				assignVal,
@@ -238,7 +268,9 @@ func parseObject(sch *schema.Schema) (hClassFile, cppClassFile) {
 			}
 			aUnpackProp = fmt.Sprintf(
 				""+
-					"        auto [v, ab] = _unpackUint64(b, atByte, lenD);\n"+
+					"        Tuple<uint64_t, uint32_t> r = _unpackUint64(b, atByte, lenD);\n"+
+					"		 uint64_t v = r.a;\n"+
+					"		 uint32_t ab = r.b;\n"+
 					"        %s;\n"+
 					"        atByte = ab;",
 				assignVal,
@@ -264,7 +296,9 @@ func parseObject(sch *schema.Schema) (hClassFile, cppClassFile) {
 			}
 			aUnpackProp = fmt.Sprintf(
 				""+
-					"        auto [v, ab] = _unpackUint32(b, atByte, lenD);\n"+
+					"        Tuple<uint32_t, uint32_t> r = _unpackUint32(b, atByte, lenD);\n"+
+					"		 uint32_t v = r.a;\n"+
+					"		 uint32_t ab = r.b;\n"+
 					"        %s;\n"+
 					"        atByte = ab;",
 				assignVal,
@@ -290,7 +324,9 @@ func parseObject(sch *schema.Schema) (hClassFile, cppClassFile) {
 			}
 			aUnpackProp = fmt.Sprintf(
 				""+
-					"        auto [v, ab] = _unpackUint64(b, atByte, lenD);\n"+
+					"        Tuple<uint64_t, uint32_t> r = _unpackUint64(b, atByte, lenD);\n"+
+					"		 uint64_t v = r.a;\n"+
+					"		 uint32_t ab = r.b;\n"+
 					"        %s;\n"+
 					"        atByte = ab;",
 				assignVal,
@@ -316,7 +352,9 @@ func parseObject(sch *schema.Schema) (hClassFile, cppClassFile) {
 			}
 			aUnpackProp = fmt.Sprintf(
 				""+
-					"        auto [v, ab] = _unpackBool(b, atByte, lenD);\n"+
+					"        Tuple<bool, uint32_t> r = _unpackBool(b, atByte, lenD);\n"+
+					"		 bool v = r.a;\n"+
+					"		 uint32_t ab = r.b;\n"+
 					"        %s;\n"+
 					"        atByte = ab;",
 				assignVal,
@@ -343,7 +381,9 @@ func parseObject(sch *schema.Schema) (hClassFile, cppClassFile) {
 			}
 			aUnpackProp = fmt.Sprintf(
 				""+
-					"        auto [v, ab] = _unpackEnum(b, atByte, lenD);\n"+
+					"        Tuple<std::string, uint32_t> r = _unpackEnum(b, atByte, lenD);\n"+
+					"		 std::string v = r.a;\n"+
+					"		 uint32_t ab = r.b;\n"+
 					"		 %s;\n"+
 					"        atByte = ab;",
 				assignVal,
@@ -370,7 +410,9 @@ func parseObject(sch *schema.Schema) (hClassFile, cppClassFile) {
 			}
 			aUnpackProp = fmt.Sprintf(
 				""+
-					"        auto [v, ab] = _unpackObject(b, atByte, lenD);\n"+
+					"        Tuple<std::vector<uint8_t>, uint32_t> r = _unpackObject(b, atByte, lenD);\n"+
+					"		 std::vector<uint8_t> v = r.a;\n"+
+					"		 uint32_t ab = r.b;\n"+
 					"        std::string l = lvl+\".%s\";\n"+
 					"        %s;\n"+
 					"        atByte = ab;",
@@ -396,7 +438,9 @@ func parseObject(sch *schema.Schema) (hClassFile, cppClassFile) {
 			}
 			aUnpackProp = fmt.Sprintf(
 				""+
-					"        auto [v, ab] = _unpackBytes(b, atByte, lenD);\n"+
+					"        Tuple<std::vector<uint8_t>, uint32_t> r = _unpackBytes(b, atByte, lenD);\n"+
+					"		 std::vector<uint8_t> v = r.a;\n"+
+					"		 uint32_t ab = r.b;\n"+
 					"        %s;\n"+
 					"        atByte = ab;",
 				assignVal,

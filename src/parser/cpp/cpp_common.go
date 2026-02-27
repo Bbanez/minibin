@@ -43,7 +43,9 @@ std::vector<uint8_t> @name::pack() {
 	while (atByte < b.size()) {
         uint8_t pos = b[atByte];
         atByte++;
-        auto [lenD, typ] = _unmergeDataTypeAndLenDataLen(b[atByte]);
+        Tuple<uint8_t, uint8_t> res = _unmergeDataTypeAndLenDataLen(b[atByte]);
+		uint8_t lenD = res.a;
+		uint8_t typ  = res.b;
         atByte++;
         std::string propName = result.getPropNameAtPos(pos);
         std::string lvl      = *level + "." + propName;
@@ -52,7 +54,7 @@ std::vector<uint8_t> @name::pack() {
 	return result;
 }`
 
-var HEnim = `
+var HEnum = `
 // -----------------------------------------------------------------
 // ---- @name Enum
 // -----------------------------------------------------------------
@@ -63,19 +65,19 @@ std::string @nameToString(@name e);
 @name @nameFromString(const std::string& s);
 @name newEmpty@name();`
 
-var CPPEnim = `
+var CEnum = `
 // -----------------------------------------------------------------
 // ---- @name Enum
 // -----------------------------------------------------------------
 std::string @nameToString(@name e) {
 	switch (e) {
-	@enumToStringCases
+@enumToStringCases
 	default:
 		return "__unknown__";
 	}
 }
 @name @nameFromString(const std::string& s) {
-	@stringToEnumCases
+@stringToEnumCases
 	return (@name)0;
 }`
 
@@ -84,39 +86,48 @@ var CommonFunctionsH = `#ifndef MINIBIN_H
 
 #include <cstdint>
 #include <string>
-#include <tuple>
 #include <vector>
+
+template <typename T, typename K>
+class Tuple {
+public:
+    Tuple(T a, K b) : a(a), b(b) {}
+
+    T a;
+    K b;
+};
+
 
 // ---------------------------------------------------------------------------
 // ---- Common functions for packing and unpacking data
 // ---------------------------------------------------------------------------
 uint8_t _mergeDataTypeAndLenDataLen(uint8_t typ, uint8_t lenD);
-std::tuple<uint8_t, uint8_t> _unmergeDataTypeAndLenDataLen(uint8_t b);
+Tuple<uint8_t, uint8_t> _unmergeDataTypeAndLenDataLen(uint8_t b);
 
-std::tuple<uint8_t, std::vector<uint8_t>> _splitUint32(uint32_t unum);
+Tuple<uint8_t, std::vector<uint8_t>> _splitUint32(uint32_t unum);
 uint32_t _mergeUint32(uint8_t lenD, const std::vector<uint8_t>& bytes);
 
-std::tuple<uint8_t, std::vector<uint8_t>> _splitUint64(uint64_t unum);
+Tuple<uint8_t, std::vector<uint8_t>> _splitUint64(uint64_t unum);
 uint64_t _mergeUint64(uint8_t lenD, const std::vector<uint8_t>& bytes);
 
 std::vector<uint8_t> _packString(const std::string& str, uint8_t pos);
-std::tuple<std::string, uint32_t> _unpackString(const std::vector<uint8_t>& b,
+Tuple<std::string, uint32_t> _unpackString(const std::vector<uint8_t>& b,
                                                 uint32_t atByte, uint8_t lenD);
 
 std::vector<uint8_t> _packInt32(int32_t num, uint8_t pos);
-std::tuple<int32_t, uint32_t> _unpackInt32(const std::vector<uint8_t>& b,
+Tuple<int32_t, uint32_t> _unpackInt32(const std::vector<uint8_t>& b,
                                            uint32_t atByte, uint8_t lenD);
 
 std::vector<uint8_t> _packInt64(int64_t num, uint8_t pos);
-std::tuple<int64_t, uint32_t> _unpackInt64(const std::vector<uint8_t>& b,
+Tuple<int64_t, uint32_t> _unpackInt64(const std::vector<uint8_t>& b,
                                            uint32_t atByte, uint8_t lenD);
 
 std::vector<uint8_t> _packUint32(uint32_t num, uint8_t pos);
-std::tuple<uint32_t, uint32_t> _unpackUint32(const std::vector<uint8_t>& b,
+Tuple<uint32_t, uint32_t> _unpackUint32(const std::vector<uint8_t>& b,
                                              uint32_t atByte, uint8_t lenD);
 
 std::vector<uint8_t> _packUint64(uint64_t num, uint8_t pos);
-std::tuple<uint64_t, uint32_t> _unpackUint64(const std::vector<uint8_t>& b,
+Tuple<uint64_t, uint32_t> _unpackUint64(const std::vector<uint8_t>& b,
                                              uint32_t atByte, uint8_t lenD);
 
 std::vector<uint8_t> _packFloat32(float num, uint8_t pos, float decimals);
@@ -124,19 +135,19 @@ std::vector<uint8_t> _packFloat32(float num, uint8_t pos, float decimals);
 std::vector<uint8_t> _packFloat64(double num, uint8_t pos);
 
 std::vector<uint8_t> _packBool(bool num, uint8_t pos);
-std::tuple<bool, uint32_t> _unpackBool(const std::vector<uint8_t>& b,
+Tuple<bool, uint32_t> _unpackBool(const std::vector<uint8_t>& b,
                                        uint32_t atByte, uint8_t lenD);
 
 std::vector<uint8_t> _packObject(const std::vector<uint8_t>& data, uint8_t pos);
-std::tuple<std::vector<uint8_t>, uint32_t> _unpackObject(
+Tuple<std::vector<uint8_t>, uint32_t> _unpackObject(
     const std::vector<uint8_t>& b, uint32_t atByte, uint8_t lenD);
 
 std::vector<uint8_t> _packEnum(const std::string& s, uint8_t pos);
-std::tuple<std::string, uint32_t> _unpackEnum(const std::vector<uint8_t>& b,
+Tuple<std::string, uint32_t> _unpackEnum(const std::vector<uint8_t>& b,
                                               uint32_t atByte, uint8_t lenD);
 
 std::vector<uint8_t> _packBytes(const std::vector<uint8_t>& data, uint8_t pos);
-std::tuple<std::vector<uint8_t>, uint32_t> _unpackBytes(
+Tuple<std::vector<uint8_t>, uint32_t> _unpackBytes(
 	const std::vector<uint8_t>& b, uint32_t atByte, uint8_t lenD);
 // ---------------------------------------------------------------------------`
 
@@ -144,8 +155,6 @@ var CommonFunctionsCPP = `#include "minibin.hpp"
 
 #include <cstdint>
 #include <stdexcept>
-#include <cstdio>
-#include <tuple>
 #include <vector>
 
 // ---------------------------------------------------------------------------
@@ -155,13 +164,13 @@ uint8_t _mergeDataTypeAndLenDataLen(uint8_t typ, uint8_t lenD) {
     return lenD + (typ << 4);
 }
 
-std::tuple<uint8_t, uint8_t> _unmergeDataTypeAndLenDataLen(uint8_t b) {
+Tuple<uint8_t, uint8_t> _unmergeDataTypeAndLenDataLen(uint8_t b) {
     uint8_t lenD = b & 0b00001111;
     uint8_t typ  = (b & 0b11110000) >> 4;
-    return std::make_tuple(lenD, typ);
+    return Tuple<uint8_t, uint8_t>(lenD, typ);
 }
 
-std::tuple<uint8_t, std::vector<uint8_t>> _splitUint32(uint32_t unum) {
+Tuple<uint8_t, std::vector<uint8_t>> _splitUint32(uint32_t unum) {
     uint8_t lenD;
     std::vector<uint8_t> b;
     if (unum < 0xFF) {
@@ -186,7 +195,7 @@ std::tuple<uint8_t, std::vector<uint8_t>> _splitUint32(uint32_t unum) {
             uint8_t(0x000000FF & unum),
         };
     }
-    return std::make_tuple(lenD, b);
+    return Tuple<uint8_t, std::vector<uint8_t>>(lenD, b);
 }
 
 uint32_t _mergeUint32(uint8_t lenD, const std::vector<uint8_t>& bytes) {
@@ -203,7 +212,7 @@ uint32_t _mergeUint32(uint8_t lenD, const std::vector<uint8_t>& bytes) {
     }
 }
 
-std::tuple<uint8_t, std::vector<uint8_t>> _splitUint64(uint64_t unum) {
+Tuple<uint8_t, std::vector<uint8_t>> _splitUint64(uint64_t unum) {
     uint8_t lenD;
     std::vector<uint8_t> b;
     if (unum < 0xFF) {
@@ -273,7 +282,7 @@ std::tuple<uint8_t, std::vector<uint8_t>> _splitUint64(uint64_t unum) {
             uint8_t(0x00000000000000FF & unum),
         };
     }
-    return std::make_tuple(lenD, b);
+    return Tuple<uint8_t, std::vector<uint8_t>>(lenD, b);
 }
 
 uint64_t _mergeUint64(uint8_t lenD, const std::vector<uint8_t>& bytes) {
@@ -310,14 +319,14 @@ uint64_t _mergeUint64(uint8_t lenD, const std::vector<uint8_t>& bytes) {
 
 std::vector<uint8_t> _packString(const std::string& s, uint8_t pos) {
     std::vector<uint8_t> data(s.begin(), s.end());
-    auto [lenD, dataLenBytes]   = _splitUint32(uint32_t(data.size()));
-    uint8_t typLenD             = _mergeDataTypeAndLenDataLen(1, lenD);
+     Tuple<uint8_t, std::vector<uint8_t>> res  = _splitUint32(uint32_t(data.size()));
+    uint8_t typLenD             = _mergeDataTypeAndLenDataLen(1, res.a);
     std::vector<uint8_t> result = {pos, typLenD};
-    result.insert(result.end(), dataLenBytes.begin(), dataLenBytes.end());
+    result.insert(result.end(), res.b.begin(), res.b.end());
     result.insert(result.end(), data.begin(), data.end());
     return result;
 }
-std::tuple<std::string, uint32_t> _unpackString(const std::vector<uint8_t>& b,
+Tuple<std::string, uint32_t> _unpackString(const std::vector<uint8_t>& b,
                                                 uint32_t atByte, uint8_t lenD) {
     lenD++;
     std::vector<uint8_t> data(b.begin() + atByte, b.begin() + atByte + lenD);
@@ -327,7 +336,7 @@ std::tuple<std::string, uint32_t> _unpackString(const std::vector<uint8_t>& b,
         b.begin() + atByte, b.begin() + atByte + dataLen);
     std::string str(dataBytes.begin(), dataBytes.end());
     atByte += dataLen;
-    return std::make_tuple(str, atByte);
+	return Tuple<std::string, uint32_t>(str, atByte);
 }
 
 std::vector<uint8_t> _packInt32(int32_t num, uint8_t pos) {
@@ -336,13 +345,13 @@ std::vector<uint8_t> _packInt32(int32_t num, uint8_t pos) {
         neg = 1;
         num = -num;
     }
-    auto [lenD, data]           = _splitUint32(uint32_t(num));
-    uint8_t typLenD             = _mergeDataTypeAndLenDataLen(2, lenD);
+    Tuple<uint8_t, std::vector<uint8_t>> res = _splitUint32(uint32_t(num));
+    uint8_t typLenD             = _mergeDataTypeAndLenDataLen(2, res.a);
     std::vector<uint8_t> result = {pos, typLenD, neg};
-    result.insert(result.end(), data.begin(), data.end());
+    result.insert(result.end(), res.b.begin(),res.b.end());
     return result;
 }
-std::tuple<int32_t, uint32_t> _unpackInt32(const std::vector<uint8_t>& b,
+Tuple<int32_t, uint32_t> _unpackInt32(const std::vector<uint8_t>& b,
                                            uint32_t atByte, uint8_t lenD) {
     lenD++;
     uint8_t neg = b.at(atByte);
@@ -352,9 +361,9 @@ std::tuple<int32_t, uint32_t> _unpackInt32(const std::vector<uint8_t>& b,
     uint32_t data = _mergeUint32(lenD, dataBytes);
     atByte += lenD;
     if (neg) {
-        return std::make_tuple(-int32_t(data), atByte);
+        return Tuple<int32_t, uint32_t>(-int32_t(data), atByte);
     }
-    return std::make_tuple(int32_t(data), atByte);
+    return Tuple<int32_t, uint32_t>(int32_t(data), atByte);
 }
 
 std::vector<uint8_t> _packInt64(int64_t num, uint8_t pos) {
@@ -363,13 +372,13 @@ std::vector<uint8_t> _packInt64(int64_t num, uint8_t pos) {
         neg = 1;
         num = -num;
     }
-    auto [lenD, data]           = _splitUint64(uint64_t(num));
-    uint8_t typLenD             = _mergeDataTypeAndLenDataLen(3, lenD);
+    Tuple<uint8_t, std::vector<uint8_t>> res = _splitUint64(uint64_t(num));
+    uint8_t typLenD             = _mergeDataTypeAndLenDataLen(3, res.a);
     std::vector<uint8_t> result = {pos, typLenD, neg};
-    result.insert(result.end(), data.begin(), data.end());
+    result.insert(result.end(),res.b.begin(),res.b.end());
     return result;
 }
-std::tuple<int64_t, uint32_t> _unpackInt64(const std::vector<uint8_t>& b,
+Tuple<int64_t, uint32_t> _unpackInt64(const std::vector<uint8_t>& b,
                                            uint32_t atByte, uint8_t lenD) {
     lenD++;
     uint8_t neg = b.at(atByte);
@@ -379,43 +388,43 @@ std::tuple<int64_t, uint32_t> _unpackInt64(const std::vector<uint8_t>& b,
     uint32_t data = _mergeUint64(lenD, dataBytes);
     atByte += lenD;
     if (neg) {
-        return std::make_tuple(-int64_t(data), atByte);
+        return Tuple<int64_t, uint32_t>(-int64_t(data), atByte);
     }
-    return std::make_tuple(int64_t(data), atByte);
+    return Tuple<int64_t, uint32_t>(int64_t(data), atByte);
 }
 
 std::vector<uint8_t> _packUint32(uint32_t num, uint8_t pos) {
-    auto [lenD, data]           = _splitUint32(num);
-    uint8_t typLenD             = _mergeDataTypeAndLenDataLen(4, lenD);
+    Tuple<uint8_t, std::vector<uint8_t>> res = _splitUint32(num);
+    uint8_t typLenD             = _mergeDataTypeAndLenDataLen(4, res.a);
     std::vector<uint8_t> result = {pos, typLenD};
-    result.insert(result.end(), data.begin(), data.end());
+    result.insert(result.end(), res.b.begin(), res.b.end());
     return result;
 }
-std::tuple<uint32_t, uint32_t> _unpackUint32(const std::vector<uint8_t>& b,
+Tuple<uint32_t, uint32_t> _unpackUint32(const std::vector<uint8_t>& b,
                                              uint32_t atByte, uint8_t lenD) {
     lenD++;
     std::vector<uint8_t> dataBytes(b.begin() + atByte,
                                    b.begin() + atByte + lenD);
     uint32_t data = _mergeUint32(lenD, dataBytes);
     atByte += lenD;
-    return std::make_tuple(data, atByte);
+    return Tuple<uint32_t, uint32_t>(data, atByte);
 }
 
 std::vector<uint8_t> _packUint64(uint64_t num, uint8_t pos) {
-    auto [lenD, data]           = _splitUint64(num);
-    uint8_t typLenD             = _mergeDataTypeAndLenDataLen(5, lenD);
+    Tuple<uint8_t, std::vector<uint8_t>> res = _splitUint64(num);
+    uint8_t typLenD             = _mergeDataTypeAndLenDataLen(5,res.a);
     std::vector<uint8_t> result = {pos, typLenD};
-    result.insert(result.end(), data.begin(), data.end());
+    result.insert(result.end(),res.b.begin(), res.b.end());
     return result;
 }
-std::tuple<uint64_t, uint32_t> _unpackUint64(const std::vector<uint8_t>& b,
+Tuple<uint64_t, uint32_t> _unpackUint64(const std::vector<uint8_t>& b,
                                              uint32_t atByte, uint8_t lenD) {
     lenD++;
     std::vector<uint8_t> dataBytes(b.begin() + atByte,
                                    b.begin() + atByte + lenD);
     uint64_t data = _mergeUint64(lenD, dataBytes);
     atByte += lenD;
-    return std::make_tuple(data, atByte);
+    return Tuple<uint64_t, uint32_t>(data, atByte);
 }
 
 std::vector<uint8_t> _packFloat32(float fnum, uint8_t pos, float decimals) {
@@ -425,10 +434,10 @@ std::vector<uint8_t> _packFloat32(float fnum, uint8_t pos, float decimals) {
         neg = 1;
         num = -num;
     }
-    auto [lenD, data]           = _splitUint32(num);
-    uint8_t typLenD             = _mergeDataTypeAndLenDataLen(6, lenD);
+    Tuple<uint8_t, std::vector<uint8_t>> res = _splitUint32(num);
+    uint8_t typLenD             = _mergeDataTypeAndLenDataLen(6, res.a);
     std::vector<uint8_t> result = {pos, typLenD, neg};
-    result.insert(result.end(), data.begin(), data.end());
+    result.insert(result.end(), res.b.begin(), res.b.end());
     return result;
 }
 
@@ -439,10 +448,10 @@ std::vector<uint8_t> _packFloat64(double fnum, uint8_t pos, float decimals) {
         neg = 1;
         num = -num;
     }
-    auto [lenD, data]           = _splitUint64(num);
-    uint8_t typLenD             = _mergeDataTypeAndLenDataLen(7, lenD);
+    Tuple<uint8_t, std::vector<uint8_t>> res           = _splitUint64(num);
+    uint8_t typLenD             = _mergeDataTypeAndLenDataLen(7, res.a);
     std::vector<uint8_t> result = {pos, typLenD, neg};
-    result.insert(result.end(), data.begin(), data.end());
+    result.insert(result.end(),res.b.begin(),res.b.end());
     return result;
 }
 
@@ -456,8 +465,8 @@ std::vector<uint8_t> _packBool(bool num, uint8_t pos) {
     }
     return result;
 }
-std::tuple<bool, uint32_t> _unpackBool(const std::vector<uint8_t>& b,
-                                       uint32_t atByte) {
+Tuple<bool, uint32_t> _unpackBool(const std::vector<uint8_t>& b,
+                                       uint32_t atByte, uint8_t lenD) {
     uint8_t dataBytes = b.at(atByte);
     atByte++;
     bool data;
@@ -466,19 +475,19 @@ std::tuple<bool, uint32_t> _unpackBool(const std::vector<uint8_t>& b,
     } else {
         data = true;
     }
-    return std::make_tuple(data, atByte);
+    return Tuple<bool, uint32_t>(data, atByte);
 }
 
 std::vector<uint8_t> _packObject(const std::vector<uint8_t>& data,
                                  uint8_t pos) {
-    auto [lenD, dataLenBytes]   = _splitUint32(data.size());
-    uint8_t typLenD             = _mergeDataTypeAndLenDataLen(9, lenD);
+    Tuple<uint8_t, std::vector<uint8_t>> res   = _splitUint32(data.size());
+    uint8_t typLenD             = _mergeDataTypeAndLenDataLen(9, res.a);
     std::vector<uint8_t> result = {pos, typLenD};
-    result.insert(result.end(), dataLenBytes.begin(), dataLenBytes.end());
+    result.insert(result.end(), res.b.begin(), res.b.end());
     result.insert(result.end(), data.begin(), data.end());
     return result;
 }
-std::tuple<std::vector<uint8_t>, uint32_t> _unpackObject(
+Tuple<std::vector<uint8_t>, uint32_t> _unpackObject(
     const std::vector<uint8_t>& b, uint32_t atByte, uint8_t lenD) {
     lenD++;
     uint8_t dataLen = _mergeUint32(
@@ -488,19 +497,19 @@ std::tuple<std::vector<uint8_t>, uint32_t> _unpackObject(
     std::vector<uint8_t> dataBytes = std::vector<uint8_t>(
         b.begin() + atByte, b.begin() + atByte + dataLen);
     atByte += dataLen;
-    return std::make_tuple(dataBytes, atByte);
+    return Tuple<std::vector<uint8_t>, uint32_t>(dataBytes, atByte);
 }
 
 std::vector<uint8_t> _packEnum(const std::string& s, uint8_t pos) {
     std::vector<uint8_t> data(s.begin(), s.end());
-    auto [lenD, dataLenBytes]   = _splitUint32(data.size());
-    uint8_t typLenD             = _mergeDataTypeAndLenDataLen(10, lenD);
+    Tuple<uint8_t, std::vector<uint8_t>> res = _splitUint32(data.size());
+    uint8_t typLenD             = _mergeDataTypeAndLenDataLen(10, res.a);
     std::vector<uint8_t> result = {pos, typLenD};
-    result.insert(result.end(), dataLenBytes.begin(), dataLenBytes.end());
+    result.insert(result.end(), res.b.begin(), res.b.end());
     result.insert(result.end(), data.begin(), data.end());
     return result;
 }
-std::tuple<std::string, uint32_t> _unpackEnum(const std::vector<uint8_t>& b,
+Tuple<std::string, uint32_t> _unpackEnum(const std::vector<uint8_t>& b,
                                               uint32_t atByte, uint8_t lenD) {
     lenD++;
     std::vector<uint8_t> data(b.begin() + atByte, b.begin() + atByte + lenD);
@@ -510,18 +519,18 @@ std::tuple<std::string, uint32_t> _unpackEnum(const std::vector<uint8_t>& b,
         b.begin() + atByte, b.begin() + atByte + dataLen);
     std::string str(dataBytes.begin(), dataBytes.end());
     atByte += dataLen;
-    return std::make_tuple(str, atByte);
+    return Tuple<std::string, uint32_t>(str, atByte);
 }
 
 std::vector<uint8_t> _packBytes(const std::vector<uint8_t>& data, uint8_t pos) {
-    auto [lenD, dataLenBytes]   = _splitUint32(data.size());
-    uint8_t typLenD             = _mergeDataTypeAndLenDataLen(11, lenD);
+    Tuple<uint8_t, std::vector<uint8_t>> res   = _splitUint32(data.size());
+    uint8_t typLenD             = _mergeDataTypeAndLenDataLen(11, res.a);
     std::vector<uint8_t> result = {pos, typLenD};
-    result.insert(result.end(), dataLenBytes.begin(), dataLenBytes.end());
+    result.insert(result.end(), res.b.begin(), res.b.end());
     result.insert(result.end(), data.begin(), data.end());
     return result;
 }
-std::tuple<std::vector<uint8_t>, uint32_t> _unpackBytes(
+Tuple<std::vector<uint8_t>, uint32_t> _unpackBytes(
     const std::vector<uint8_t>& b, uint32_t atByte, uint8_t lenD) {
     lenD++;
     uint8_t dataLen = _mergeUint32(
@@ -531,6 +540,6 @@ std::tuple<std::vector<uint8_t>, uint32_t> _unpackBytes(
     std::vector<uint8_t> dataBytes = std::vector<uint8_t>(
         b.begin() + atByte, b.begin() + atByte + dataLen);
     atByte += dataLen;
-    return std::make_tuple(dataBytes, atByte);
+    return Tuple<std::vector<uint8_t>, uint32_t>(dataBytes, atByte);
 }
 // ---------------------------------------------------------------------------`
