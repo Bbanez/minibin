@@ -132,11 +132,15 @@ func parseObject(sch *schema.Schema) (hClassFile, cppClassFile) {
 		case "string":
 			typ = "std::string"
 			val = "\"\""
+			ptrDeref := ""
+			if !prop.Required {
+				ptrDeref = "*"
+			}
 			aPackProp = fmt.Sprintf(
 				""+
-					"    std::vector<uint8_t> %sBytes = _packString(this->%s, %d);\n"+
+					"    std::vector<uint8_t> %sBytes = _packString(%sthis->%s, %d);\n"+
 					"    result.insert(result.end(), %sBytes.begin(), %sBytes.end());",
-				prop.Name, prop.Name, i, prop.Name, prop.Name,
+				prop.Name, ptrDeref, prop.Name, i, prop.Name, prop.Name,
 			)
 			ptr := ""
 			if !prop.Required {
@@ -190,20 +194,28 @@ func parseObject(sch *schema.Schema) (hClassFile, cppClassFile) {
 		case "i32":
 			typ = "int32_t"
 			val = "0"
+			ptrDeref := ""
+			if !prop.Required {
+				ptrDeref = "*"
+			}
 			aPackProp = fmt.Sprintf(
 				""+
-					"    std::vector<uint8_t> %sBytes = _packInt32(this->%s, %d);\n"+
+					"    std::vector<uint8_t> %sBytes = _packInt32(%sthis->%s, %d);\n"+
 					"    result.insert(result.end(), %sBytes.begin(), %sBytes.end());",
-				prop.Name, prop.Name, i, prop.Name, prop.Name,
+				prop.Name, ptrDeref, prop.Name, i, prop.Name, prop.Name,
 			)
-			ptr := ""
-			if !prop.Required {
-				ptr = "&"
+			assignVal := ""
+			if prop.Required {
+				assignVal = fmt.Sprintf(
+					"result.%s = v",
+					prop.Name,
+				)
+			} else {
+				assignVal = fmt.Sprintf(
+					"result.%s = &v",
+					prop.Name,
+				)
 			}
-			assignVal := fmt.Sprintf(
-				"result.%s = %sv",
-				prop.Name, ptr,
-			)
 			if prop.Array {
 				assignVal = fmt.Sprintf(
 					"result.%s.push_back(v)",
@@ -248,16 +260,28 @@ func parseObject(sch *schema.Schema) (hClassFile, cppClassFile) {
 		case "i64":
 			typ = "int64_t"
 			val = "0"
+			ptrDeref := ""
+			if !prop.Required {
+				ptrDeref = "*"
+			}
 			aPackProp = fmt.Sprintf(
 				""+
-					"    std::vector<uint8_t> %sBytes = _packInt64(this->%s, %d);\n"+
+					"    std::vector<uint8_t> %sBytes = _packInt64(%sthis->%s, %d);\n"+
 					"    result.insert(result.end(), %sBytes.begin(), %sBytes.end());",
-				prop.Name, prop.Name, i, prop.Name, prop.Name,
+				prop.Name, ptrDeref, prop.Name, i, prop.Name, prop.Name,
 			)
-			assignVal := fmt.Sprintf(
-				"result.%s = v",
-				prop.Name,
-			)
+			assignVal := ""
+			if prop.Required {
+				assignVal = fmt.Sprintf(
+					"result.%s = v",
+					prop.Name,
+				)
+			} else {
+				assignVal = fmt.Sprintf(
+					"result.%s = &v",
+					prop.Name,
+				)
+			}
 			if prop.Array {
 				assignVal = fmt.Sprintf(
 					"result.%s.push_back(v)",
@@ -302,16 +326,28 @@ func parseObject(sch *schema.Schema) (hClassFile, cppClassFile) {
 		case "u32":
 			typ = "uint32_t"
 			val = "0"
+			ptrDeref := ""
+			if !prop.Required {
+				ptrDeref = "*"
+			}
 			aPackProp = fmt.Sprintf(
 				""+
-					"    std::vector<uint8_t> %sBytes = _packUint32(this->%s, %d);\n"+
+					"    std::vector<uint8_t> %sBytes = _packUint32(%sthis->%s, %d);\n"+
 					"    result.insert(result.end(), %sBytes.begin(), %sBytes.end());",
-				prop.Name, prop.Name, i, prop.Name, prop.Name,
+				prop.Name, ptrDeref, prop.Name, i, prop.Name, prop.Name,
 			)
-			assignVal := fmt.Sprintf(
-				"result.%s = v",
-				prop.Name,
-			)
+			assignVal := ""
+			if prop.Required {
+				assignVal = fmt.Sprintf(
+					"result.%s = v",
+					prop.Name,
+				)
+			} else {
+				assignVal = fmt.Sprintf(
+					"result.%s = &v",
+					prop.Name,
+				)
+			}
 			if prop.Array {
 				assignVal = fmt.Sprintf(
 					"result.%s.push_back(v)",
@@ -356,16 +392,28 @@ func parseObject(sch *schema.Schema) (hClassFile, cppClassFile) {
 		case "u64":
 			typ = "uint64_t"
 			val = "0"
+			ptrDeref := ""
+			if !prop.Required {
+				ptrDeref = "*"
+			}
 			aPackProp = fmt.Sprintf(
 				""+
-					"    std::vector<uint8_t> %sBytes = _packUint64(this->%s, %d);\n"+
+					"    std::vector<uint8_t> %sBytes = _packUint64(%sthis->%s, %d);\n"+
 					"    result.insert(result.end(), %sBytes.begin(), %sBytes.end());",
-				prop.Name, prop.Name, i, prop.Name, prop.Name,
+				prop.Name, ptrDeref, prop.Name, i, prop.Name, prop.Name,
 			)
-			assignVal := fmt.Sprintf(
-				"result.%s = v",
-				prop.Name,
-			)
+			assignVal := ""
+			if prop.Required {
+				assignVal = fmt.Sprintf(
+					"result.%s = v",
+					prop.Name,
+				)
+			} else {
+				assignVal = fmt.Sprintf(
+					"result.%s = &v",
+					prop.Name,
+				)
+			}
 			if prop.Array {
 				assignVal = fmt.Sprintf(
 					"result.%s.push_back(v)",
@@ -410,16 +458,30 @@ func parseObject(sch *schema.Schema) (hClassFile, cppClassFile) {
 		case "f32":
 			typ = "float"
 			val = "0.0f"
+			ptr := ""
+			if !prop.Required {
+				ptr = "*"
+			}
 			aPackProp = fmt.Sprintf(
 				""+
-					"    std::vector<uint8_t> %sBytes = _packFloat32(this->%s, %d, %d.0f);\n"+
+					"    std::vector<uint8_t> %sBytes = _packFloat32(%sthis->%s, %d, %d.0f);\n"+
 					"    result.insert(result.end(), %sBytes.begin(), %sBytes.end());",
-				prop.Name, prop.Name, i, int(prop.Decimals), prop.Name, prop.Name,
+				prop.Name, ptr, prop.Name, i, int(prop.Decimals), prop.Name, prop.Name,
 			)
-			assignVal := fmt.Sprintf(
-				"result.%s = float(v) / %.1f",
-				prop.Name, prop.Decimals,
-			)
+			assignVal := ""
+			if prop.Required {
+				assignVal = fmt.Sprintf(
+					"result.%s = float(v) / %.1f",
+					prop.Name, prop.Decimals,
+				)
+			} else {
+				assignVal = fmt.Sprintf(
+					""+
+						"%s tmpValue = float(v) / %.1f;\n"+
+						"     result.%s = &tmpValue",
+					typ, prop.Decimals, prop.Name,
+				)
+			}
 			if prop.Array {
 				assignVal = fmt.Sprintf(
 					"result.%s.push_back(float(v) / %d.0f)",
@@ -464,16 +526,30 @@ func parseObject(sch *schema.Schema) (hClassFile, cppClassFile) {
 		case "f64":
 			typ = "double"
 			val = "0.0"
+			ptrDeref := ""
+			if !prop.Required {
+				ptrDeref = "*"
+			}
 			aPackProp = fmt.Sprintf(
 				""+
-					"    std::vector<uint8_t> %sBytes = _packFloat64(this->%s, %d, %d.0f);\n"+
+					"    std::vector<uint8_t> %sBytes = _packFloat64(%sthis->%s, %d, %d.0f);\n"+
 					"    result.insert(result.end(), %sBytes.begin(), %sBytes.end());",
-				prop.Name, prop.Name, i, int(prop.Decimals), prop.Name, prop.Name,
+				prop.Name, ptrDeref, prop.Name, i, int(prop.Decimals), prop.Name, prop.Name,
 			)
-			assignVal := fmt.Sprintf(
-				"result.%s = double(v) / %.1f",
-				prop.Name, prop.Decimals,
-			)
+			assignVal := ""
+			if prop.Required {
+				assignVal = fmt.Sprintf(
+					"result.%s = double(v) / %.1f",
+					prop.Name, prop.Decimals,
+				)
+			} else {
+				assignVal = fmt.Sprintf(
+					""+
+						"%s tmpValue = double(v) / %.1f;\n"+
+						"     result.%s = &tmpValue",
+					typ, prop.Decimals, prop.Name,
+				)
+			}
 			if prop.Array {
 				assignVal = fmt.Sprintf(
 					"result.%s.push_back(double(v) / %.1f)",
@@ -518,16 +594,28 @@ func parseObject(sch *schema.Schema) (hClassFile, cppClassFile) {
 		case "bool":
 			typ = "bool"
 			val = "false"
+			ptrDeref := ""
+			if !prop.Required {
+				ptrDeref = "*"
+			}
 			aPackProp = fmt.Sprintf(
 				""+
-					"    std::vector<uint8_t> %sBytes = _packBool(this->%s, %d);\n"+
+					"    std::vector<uint8_t> %sBytes = _packBool(%sthis->%s, %d);\n"+
 					"    result.insert(result.end(), %sBytes.begin(), %sBytes.end());",
-				prop.Name, prop.Name, i, prop.Name, prop.Name,
+				prop.Name, ptrDeref, prop.Name, i, prop.Name, prop.Name,
 			)
-			assignVal := fmt.Sprintf(
-				"result.%s = v",
-				prop.Name,
-			)
+			assignVal := ""
+			if prop.Required {
+				assignVal = fmt.Sprintf(
+					"result.%s = v",
+					prop.Name,
+				)
+			} else {
+				assignVal = fmt.Sprintf(
+					"result.%s = &v",
+					prop.Name,
+				)
+			}
 			if prop.Array {
 				assignVal = fmt.Sprintf(
 					"result.%s.push_back(v)",
@@ -628,12 +716,21 @@ func parseObject(sch *schema.Schema) (hClassFile, cppClassFile) {
 			typ = strings.Split(*prop.Ref, ".")[1]
 			hFile.ParentCount++
 			val = fmt.Sprintf("%s()", typ)
-			aPackProp = fmt.Sprintf(
-				""+
-					"    std::vector<uint8_t> %sBytes = _packObject(this->%s.pack(), %d);\n"+
-					"    result.insert(result.end(), %sBytes.begin(), %sBytes.end());",
-				prop.Name, prop.Name, i, prop.Name, prop.Name,
-			)
+			if prop.Required || prop.Array {
+				aPackProp = fmt.Sprintf(
+					""+
+						"    std::vector<uint8_t> %sBytes = _packObject(this->%s.pack(), %d);\n"+
+						"    result.insert(result.end(), %sBytes.begin(), %sBytes.end());",
+					prop.Name, prop.Name, i, prop.Name, prop.Name,
+				)
+			} else {
+				aPackProp = fmt.Sprintf(
+					""+
+						"    std::vector<uint8_t> %sBytes = _packObject(this->%s->pack(), %d);\n"+
+						"    result.insert(result.end(), %sBytes.begin(), %sBytes.end());",
+					prop.Name, prop.Name, i, prop.Name, prop.Name,
+				)
+			}
 			assignVal := fmt.Sprintf(
 				"result.%s = unpack%s(v, l)",
 				prop.Name, typ,
@@ -643,6 +740,15 @@ func parseObject(sch *schema.Schema) (hClassFile, cppClassFile) {
 					"result.%s.push_back(unpack%s(v, l))",
 					prop.Name, typ,
 				)
+			} else {
+				if !prop.Required {
+					assignVal = fmt.Sprintf(
+						""+
+							"%s tmpValue = unpack%s(v, l);\n"+
+							"    result.%s = &tmpValue",
+						typ, typ, prop.Name,
+					)
+				}
 			}
 			aUnpackProp = fmt.Sprintf(
 				""+
@@ -655,15 +761,31 @@ func parseObject(sch *schema.Schema) (hClassFile, cppClassFile) {
 				typ, assignVal,
 			)
 			if prop.Array {
-				aPrintPrep = append(aPrintPrep, fmt.Sprintf(
-					""+
-						"    std::string %sStr = \"\";\n"+
-						"    for(int i = 0; i < this->%s.size(); i++) {\n"+
-						"        %sStr += this->%s[i].print(indent * 2);\n"+
-						"        if (i < this->%s.size() - 1) %sStr += \", \";\n"+
-						"    }",
-					prop.Name, prop.Name, prop.Name, prop.Name, prop.Name, prop.Name,
-				))
+				if prop.Required {
+					aPrintPrep = append(aPrintPrep, fmt.Sprintf(
+						""+
+							"    std::string %sStr = \"\";\n"+
+							"    for(int i = 0; i < this->%s.size(); i++) {\n"+
+							"        %sStr += this->%s[i].print(indent * 2);\n"+
+							"        if (i < this->%s.size() - 1) %sStr += \", \";\n"+
+							"    }",
+						prop.Name, prop.Name, prop.Name, prop.Name, prop.Name, prop.Name,
+					))
+				} else {
+					aPrintPrep = append(aPrintPrep, fmt.Sprintf(
+						""+
+							"    std::string %sStr = \"\";\n"+
+							"    if (this->%s != nullptr) {\n"+
+							"        for(int i = 0; i < this->%s->size(); i++) {\n"+
+							"            %sStr += this->%s->at(i).print(indent * 2);\n"+
+							"            if (i < this->%s->size() - 1) %sStr += \", \";\n"+
+							"        }"+
+							"    } else {"+
+							"        %sStr = \"null\";\n"+
+							"	 }",
+						prop.Name, prop.Name, prop.Name, prop.Name, prop.Name, prop.Name, prop.Name, prop.Name,
+					))
+				}
 			} else {
 				if prop.Required {
 					aPrintPrep = append(aPrintPrep, fmt.Sprintf(
@@ -674,7 +796,7 @@ func parseObject(sch *schema.Schema) (hClassFile, cppClassFile) {
 				} else {
 					aPrintPrep = append(aPrintPrep, fmt.Sprintf(
 						""+
-							"    std::string %sStr = this->%s != nullptr ? *this->%s.print(indent * 2) : \"null\";",
+							"    std::string %sStr = this->%s != nullptr ? this->%s->print(indent * 2) : \"null\";",
 						prop.Name, prop.Name, prop.Name,
 					))
 				}
@@ -777,8 +899,9 @@ func parseObject(sch *schema.Schema) (hClassFile, cppClassFile) {
 						"        %s\n"+
 						"    }",
 					prop.Name,
-					strings.ReplaceAll(aPackProp,
-						"this->"+prop.Name, "*this->"+prop.Name),
+					aPackProp,
+					// strings.ReplaceAll(aPackProp,
+					// 	"this->"+prop.Name, "*this->"+prop.Name),
 				)
 			}
 			tmp := strings.ReplaceAll(aUnpackProp, "        ", "             ")
