@@ -6,13 +6,14 @@ import (
 )
 
 type Args struct {
-	Input        string
-	Output       []string
-	Lang         string
-	PackageBase  string
-	InjectBson   bool
-	Clear        bool
-	ProjectBuild bool
+	Input         string
+	Output        []string
+	Lang          string
+	PackageBase   string
+	InjectBson    bool
+	Clear         bool
+	ProjectBuild  bool
+	CreateRelease bool
 }
 
 func GetArgs() Args {
@@ -46,6 +47,8 @@ func GetArgs() Args {
 			args.Clear = true
 		case "-project-build":
 			args.ProjectBuild = true
+		case "-r":
+			args.CreateRelease = true
 		}
 		i += 2
 	}

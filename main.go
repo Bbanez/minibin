@@ -81,6 +81,9 @@ func main() {
 			}
 			fmt.Printf(" Done\n")
 		}
+		if !args.CreateRelease {
+			return
+		}
 		cmd := exec.Command("git", "show-ref", "--tags")
 		tagsStr, err := cmd.CombinedOutput()
 		if err != nil {
