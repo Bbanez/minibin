@@ -121,6 +121,13 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 	output := p.ParserOutputItem{}
 	oStruct := "type " + sch.PascalName + " struct {\n"
 	fns := ""
+	toJsonFn := fmt.Sprintf(
+		"\n"+
+			"func (o *%s) ToJson() string {\n"+
+			"    result := []string{}\n"+
+			"",
+		sch.PascalName,
+	)
 	packFn := fmt.Sprintf(
 		"\n"+
 			"func (o *%s) Pack() []byte {\n    result := []byte{}\n",
@@ -218,6 +225,174 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 				"",
 			pos, propType, propName, pointer,
 		)
+	}
+
+	importStrconv := false
+	toJsonWrapper := func(prop *schema.SchemaProp) {
+		var reqArrStr string
+		var reqStr string
+		var optArrStr string
+		var optStr string
+		switch prop.Typ {
+		case "string":
+			reqArrStr = fmt.Sprintf(
+				"\\\"\" + strings.Join(o.%s, \"\\\",\\\"\") + \"\\\"",
+				prop.GoName,
+			)
+			reqStr = "\"\\\"\" + o." + prop.GoName + " + \"\\\"\""
+			optArrStr = fmt.Sprintf(
+				"\\\"\" + joinStringPointers(o.%s, \"\\\",\\\"\") + \"\\\"",
+				prop.GoName,
+			)
+			optStr = "\"\\\"\" + *o." + prop.GoName + " + \"\\\"\""
+		case "i32":
+			reqArrStr = fmt.Sprintf(""+
+				"\" + strings.Join(int32SliceToStringSlice(o.%s), \",\") + \"",
+				prop.GoName,
+			)
+			reqStr = fmt.Sprintf("strconv.FormatInt(int64(o.%s), 10)", prop.GoName)
+			optArrStr = fmt.Sprintf(""+
+				"\" + strings.Join(int32SliceToStringSlice(derefArr(o.%s)), \",\") + \"",
+				prop.GoName,
+			)
+			optStr = fmt.Sprintf("strconv.FormatInt(int64(*o.%s), 10)", prop.GoName)
+			importStrconv = true
+		case "i64":
+			reqArrStr = fmt.Sprintf(""+
+				"\" + strings.Join(int64SliceToStringSlice(o.%s), \",\") + \"",
+				prop.GoName,
+			)
+			reqStr = fmt.Sprintf("strconv.FormatInt(o.%s, 10)", prop.GoName)
+			optArrStr = fmt.Sprintf(""+
+				"\" + strings.Join(int64SliceToStringSlice(derefArr(o.%s)), \",\") + \"",
+				prop.GoName,
+			)
+			optStr = fmt.Sprintf("strconv.FormatInt(*o.%s, 10)", prop.GoName)
+			importStrconv = true
+		case "u32":
+			reqArrStr = fmt.Sprintf(""+
+				"\" + strings.Join(uint32SliceToStringSlice(o.%s), \",\") + \"",
+				prop.GoName,
+			)
+			reqStr = fmt.Sprintf("strconv.FormatUint(uint64(o.%s), 10)", prop.GoName)
+			optArrStr = fmt.Sprintf(""+
+				"\" + strings.Join(uint32SliceToStringSlice(derefArr(o.%s)), \",\") + \"",
+				prop.GoName,
+			)
+			optStr = fmt.Sprintf("strconv.FormatInt(uint64(*o.%s), 10)", prop.GoName)
+			importStrconv = true
+		case "u64":
+			reqArrStr = fmt.Sprintf(""+
+				"\" + strings.Join(uint64SliceToStringSlice(o.%s), \",\") + \"",
+				prop.GoName,
+			)
+			reqStr = fmt.Sprintf("strconv.FormatUint(o.%s, 10)", prop.GoName)
+			optArrStr = fmt.Sprintf(""+
+				"\" + strings.Join(uint64SliceToStringSlice(derefArr(o.%s)), \",\") + \"",
+				prop.GoName,
+			)
+			optStr = fmt.Sprintf("strconv.FormatUint(*o.%s, 10)", prop.GoName)
+			importStrconv = true
+		case "f32":
+			reqArrStr = fmt.Sprintf(""+
+				"\" + strings.Join(float32SliceToStringSlice(o.%s), \",\") + \"",
+				prop.GoName,
+			)
+			reqStr = fmt.Sprintf("strconv.FormatFloat(float64(o.%s), 'f', -1, 32)", prop.GoName)
+			optArrStr = fmt.Sprintf(""+
+				"\" + strings.Join(float32SliceToStringSlice(derefArr(o.%s)), \",\") + \"",
+				prop.GoName,
+			)
+			optStr = fmt.Sprintf("strconv.FormatFloat(float64(*o.%s), 'f', -1, 32)", prop.GoName)
+			importStrconv = true
+		case "f64":
+			reqArrStr = fmt.Sprintf(""+
+				"\" + strings.Join(float64SliceToStringSlice(o.%s), \",\") + \"",
+				prop.GoName,
+			)
+			reqStr = fmt.Sprintf("strconv.FormatFloat(o.%s, 'f', -1, 64)", prop.GoName)
+			optArrStr = fmt.Sprintf(""+
+				"\" + strings.Join(float64SliceToStringSlice(derefArr(o.%s)), \",\") + \"",
+				prop.GoName,
+			)
+			optStr = fmt.Sprintf("strconv.FormatFloat(*o.%s, 'f', -1, 64)", prop.GoName)
+			importStrconv = true
+		case "bool":
+			reqArrStr = fmt.Sprintf(""+
+				"\" + strings.Join(boolSliceToStringSlice(o.%s), \",\") + \"",
+				prop.GoName,
+			)
+			reqStr = fmt.Sprintf("strconv.FormatBool(o.%s)", prop.GoName)
+			optArrStr = fmt.Sprintf(""+
+				"\" + strings.Join(boolSliceToStringSlice(derefArr(o.%s)), \",\") + \"",
+				prop.GoName,
+			)
+			optStr = fmt.Sprintf("strconv.FormatBool(*o.%s)", prop.GoName)
+			importStrconv = true
+		case "enum":
+			reqArrStr = fmt.Sprintf(""+
+				"\\\"\" + strings.Join(enumSliceToStringSlice(o.%s), \"\\\",\\\"\") + \"\\\"",
+				prop.GoName,
+			)
+			reqStr = fmt.Sprintf("\"\\\"\" + o.%s.ToStr() + \"\\\"\"", prop.GoName)
+			optArrStr = fmt.Sprintf(""+
+				"\\\"\" + strings.Join(enumSliceToStringSlice(derefArr(o.%s)), \"\\\",\\\"\") + \"\\\"",
+				prop.GoName,
+			)
+			optStr = fmt.Sprintf("\"\\\"\" + *o.%s.ToStr() + \"\\\"\"", prop.GoName)
+		case "object":
+			reqArrStr = fmt.Sprintf(""+
+				"\" + strings.Join(objSliceToStringSlice(o.%s), \",\") + \"",
+				prop.GoName,
+			)
+			reqStr = fmt.Sprintf("o.%s.ToJson()", prop.GoName)
+			optArrStr = fmt.Sprintf(""+
+				"\" + strings.Join(objSliceToStringSlice(derefArr(o.%s)), \",\") + \"",
+				prop.GoName,
+			)
+			optStr = fmt.Sprintf("*o.%s.ToJson()", prop.GoName)
+		}
+		if prop.Required {
+			if prop.Array {
+				toJsonFn += fmt.Sprintf(""+
+					"    if len(o.%s) > 0 {\n"+
+					"        result = append(result, \"\\\"%s\\\":[%s]\")\n"+
+					"    } else {\n"+
+					"        result = append(result, \"\\\"%s\\\":[]\")\n"+
+					"    }\n"+
+					"",
+					prop.GoName, prop.Name, reqArrStr, prop.Name,
+				)
+			} else {
+				toJsonFn += fmt.Sprintf(""+
+					"    result = append(result, \"\\\"%s\\\":\" + %s)\n",
+					prop.Name, reqStr,
+				)
+			}
+		} else {
+			toJsonFn += fmt.Sprintf(""+
+				"    if o.%s != nil {\n"+
+				"    ",
+				prop.GoName,
+			)
+			if prop.Array {
+				toJsonFn += fmt.Sprintf(""+
+					"        len(o.%s) > 0 {\n"+
+					"            result = append(result, \"\\\"%s\\\":[%s]\")\n"+
+					"        } else {\n"+
+					"            result = append(result, \"\\\"%s\\\":[]\")\n"+
+					"        }\n"+
+					"",
+					prop.GoName, prop.Name, optArrStr, prop.Name,
+				)
+			} else {
+				toJsonFn += fmt.Sprintf(""+
+					"        result = append(result, \"\\\"%s\\\":\" + %s)\n",
+					prop.Name, optStr,
+				)
+			}
+			toJsonFn += "    }\n"
+		}
 	}
 
 	longestNameLen := 1
@@ -476,6 +651,7 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 				prop.Typ, sch.RPath, i,
 			))
 		}
+		toJsonWrapper(prop)
 		getPropNameFn += fmt.Sprintf(
 			""+
 				"    case %d:\n"+
@@ -521,6 +697,22 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			sch.PascalName, prop.GoName, typ, prop.GoName,
 		)
 	}
+
+	fns += fmt.Sprintf("\n"+
+		"func %sFromJson(jsonStr string) (*%s, error) {\n"+
+		"    result := %s{}\n"+
+		"    err := json.Unmarshal([]byte(jsonStr), &result)\n"+
+		"    if err != nil {\n"+
+		"        return nil, err\n"+
+		"    }\n"+
+		"    return &result, nil\n"+
+		"}\n"+
+		"",
+		sch.PascalName, sch.PascalName, sch.PascalName,
+	)
+	toJsonFn += "" +
+		"    return \"{\" + strings.Join(result, \",\") + \"}\"\n" +
+		"}\n"
 	setPropFn += fmt.Sprintf(
 		"" +
 			"    }\n" +
@@ -593,7 +785,14 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 	output.Path = strings.ReplaceAll(output.Path, "/", "_")
 	output.Path = strings.ReplaceAll(output.Path, "-", "_")
 	output.Path = "obj_" + output.Path + ".go"
-	output.Content = "package minibin\n\n"
-	output.Content += oStruct + newFn + fns + setPropFn + getPropNameFn + packFn + unpackFn
+	importPacks := "import (\n"
+	importPacks += "	\"encoding/json\"\n"
+	importPacks += "	\"strings\"\n"
+	if importStrconv {
+		importPacks += "	\"strconv\"\n"
+	}
+	importPacks += ")\n\n"
+	output.Content = "package minibin\n\n" + importPacks
+	output.Content += oStruct + newFn + fns + toJsonFn + setPropFn + getPropNameFn + packFn + unpackFn
 	return &output
 }

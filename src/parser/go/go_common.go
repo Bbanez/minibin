@@ -4,7 +4,113 @@ const Common string = `package minibin
 
 import (
 	"fmt"
+	"strings"
+	"strconv"
 )
+
+func int32SliceToStringSlice(items []int32) []string {
+    strs := make([]string, len(items))
+    for i, v := range items {
+        strs[i] = strconv.Itoa(int(v))
+    }
+    return strs
+}
+
+func int64SliceToStringSlice(items []int64) []string {
+    strs := make([]string, len(items))
+    for i, v := range items {
+        strs[i] = strconv.Itoa(int(v))
+    }
+    return strs
+}
+
+func uint32SliceToStringSlice(items []uint32) []string {
+    strs := make([]string, len(items))
+    for i, v := range items {
+        strs[i] = strconv.FormatUint(uint64(v), 10)
+    }
+    return strs
+}
+
+func uint64SliceToStringSlice(items []uint64) []string {
+    strs := make([]string, len(items))
+    for i, v := range items {
+        strs[i] = strconv.FormatUint(v, 10)
+    }
+    return strs
+}
+
+func float32SliceToStringSlice(items []float32) []string {
+    strs := make([]string, len(items))
+    for i, v := range items {
+        strs[i] = strconv.FormatFloat(float64(v), 'f', -1, 32)
+    }
+    return strs
+}
+
+func float64SliceToStringSlice(items []float64) []string {
+    strs := make([]string, len(items))
+    for i, v := range items {
+        strs[i] = strconv.FormatFloat(v, 'f', -1, 64)
+    }
+    return strs
+}
+
+func boolSliceToStringSlice(items []bool) []string {
+    strs := make([]string, len(items))
+    for i, v := range items {
+	    if v {
+	        strs[i] = "true"
+	    } else {
+	        strs[i] = "false"
+	    }
+    }
+    return strs
+}
+
+type EnumGen interface {
+	ToStr() string
+}
+func enumSliceToStringSlice[E EnumGen](items []E) []string {
+	strs := make([]string, len(items))
+	for i, v := range items {
+		strs[i] = v.ToStr()
+	}
+	return strs
+}
+
+type ObjGen interface {
+	ToJson() string
+}
+func objSliceToStringSlice[O ObjGen](items []O) []string {
+	strs := make([]string, len(items))
+	for i, v := range items {
+		strs[i] = v.ToJson()
+	}
+	return strs
+}
+
+func derefArr[T any](arr []*T) []T {
+	res := make([]T, len(arr))
+	for i := range arr {
+		if arr[i] != nil {
+			res[i] = *arr[i]
+		}
+	}
+	return res
+}
+
+func joinStringPointers(ptrs []*string, sep string) string {
+    strs := make([]string, len(ptrs))
+    for i, p := range ptrs {
+        if p != nil {
+            strs[i] = *p
+        } else {
+            strs[i] = "" // or handle nil pointers as needed
+        }
+    }
+    return strings.Join(strs, sep)
+}
 
 func Compress(data []byte) ([]byte, error) {
 	return data, nil
