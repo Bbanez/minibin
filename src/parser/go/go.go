@@ -377,7 +377,7 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			)
 			if prop.Array {
 				toJsonFn += fmt.Sprintf(""+
-					"        len(o.%s) > 0 {\n"+
+					"        if len(o.%s) > 0 {\n"+
 					"            result = append(result, \"\\\"%s\\\":[%s]\")\n"+
 					"        } else {\n"+
 					"            result = append(result, \"\\\"%s\\\":[]\")\n"+
