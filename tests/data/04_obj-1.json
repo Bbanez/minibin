@@ -16,7 +16,7 @@
             {
                 "name": "i32",
                 "typ": "i32",
-                "required": false
+                "required": true
             },
             {
                 "name": "i32Arr",
@@ -98,20 +98,20 @@
                 "name": "obj2",
                 "typ": "object",
                 "ref": "obj-2.Obj2",
-                "required": true
+                "required": false
             },
             {
                 "name": "obj2Arr",
                 "typ": "object",
                 "ref": "obj-2.Obj2",
-                "required": true,
+                "required": false,
                 "array": true
             },
             {
                 "name": "enum1",
                 "typ": "enum",
                 "ref": "enum-1.Enum1",
-                "required": true
+                "required": false
             },
             {
                 "name": "enum1Arr",
@@ -119,6 +119,17 @@
                 "ref": "enum-1.Enum1",
                 "required": true,
                 "array": true
+            },
+            {
+                "name": "bb",
+                "typ": "bytes",
+                "required": true
+            },
+            {
+                "name": "bbArr",
+                "typ": "bytes",
+                "array": true,
+                "required": true
             }
         ]
     },

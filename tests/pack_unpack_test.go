@@ -14,7 +14,7 @@ func TestPack(t *testing.T) {
 	items := m.Obj1Arr{
 		Items: []*m.Obj1{},
 	}
-	for i := 0; i < 1; i++ {
+	for i := 0; i < 2; i++ {
 		item := &m.Obj1{
 			Str:    fmt.Sprintf("item_%d", i),
 			I32:    int32(i * 10),
@@ -29,10 +29,10 @@ func TestPack(t *testing.T) {
 			F32Arr: []float32{float32(i) + 0.234, float32(-i) + 0.345},
 			F64:    float64(i) + 0.456789,
 			F64Arr: []float64{float64(i) + 0.567890, float64(i) + 0.678901},
-			Obj2: m.Obj2{
-				Key:   fmt.Sprintf("key_%d", i),
-				Value: float32(i) * 1.5,
-			},
+			Obj2: m.NewObj2(
+				fmt.Sprintf("key_%d", i),
+				float32(i)*1.5,
+			),
 			Obj2Arr: []*m.Obj2{
 				{
 					Key:   fmt.Sprintf("keyarr_%d_1", i),
@@ -45,25 +45,30 @@ func TestPack(t *testing.T) {
 			},
 			Enum1:    m.ENUM1_E1,
 			Enum1Arr: []m.Enum1{m.ENUM1_E2, m.ENUM1_E3},
+			Bb:       []byte{0x01, 0x02, 0x03, 0x04, 0x05},
+			BbArr: [][]byte{
+				{0x10, 0x20, 0x30},
+				{0x40, 0x50, 0x60},
+			},
 		}
 		items.Items = append(items.Items, item)
 	}
 	timeOffset := time.Now().UnixNano()
 	s1 := utils.SerializeJson(items)
-	fmt.Println("JS time", (time.Now().UnixNano()-timeOffset) / 1000, "us-> size:", len(s1))
+	fmt.Println("JS time", (time.Now().UnixNano()-timeOffset)/1000, "us-> size:", len(s1))
 	timeOffset = time.Now().UnixNano()
 	bytes := items.Pack()
-	fmt.Println("MB time", (time.Now().UnixNano()-timeOffset) / 1000, "us-> size:", len(bytes))
+	fmt.Println("MB time", (time.Now().UnixNano()-timeOffset)/1000, "us-> size:", len(bytes))
 	timeOffset = time.Now().UnixNano()
 	e, err := m.UnpackObj1Arr(bytes, nil)
-	fmt.Println("MB Unpack time", (time.Now().UnixNano()-timeOffset) / 1000, "us")
+	fmt.Println("MB Unpack time", (time.Now().UnixNano()-timeOffset)/1000, "us")
 	if err != nil {
 		t.Fatal("Failed to unpack entry:", err)
 	}
 	timeOffset = time.Now().UnixNano()
 	tmp := m.Obj1Arr{}
 	err = json.Unmarshal([]byte(s1), &tmp)
-	fmt.Println("JS Unpack time", (time.Now().UnixNano()-timeOffset) / 1000, "us")
+	fmt.Println("JS Unpack time", (time.Now().UnixNano()-timeOffset)/1000, "us")
 	if err != nil {
 		t.Fatal("Failed to unmarshal json:", err)
 	}

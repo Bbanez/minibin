@@ -7,6 +7,12 @@
                 "typ": "u64",
                 "decimals": 6,
                 "required": true
+            },
+            {
+                "name": "bb",
+                "typ": "bytes",
+                "required": false,
+                "array": true
             }
         ]
     }
