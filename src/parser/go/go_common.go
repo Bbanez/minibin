@@ -15,11 +15,25 @@ func int32SliceToStringSlice(items []int32) []string {
     }
     return strs
 }
+func int32SliceToStringSliceRef(items []*int32) []string {
+    strs := make([]string, len(items))
+    for i, v := range items {
+        strs[i] = strconv.Itoa(int(*v))
+    }
+    return strs
+}
 
 func int64SliceToStringSlice(items []int64) []string {
     strs := make([]string, len(items))
     for i, v := range items {
         strs[i] = strconv.Itoa(int(v))
+    }
+    return strs
+}
+func int64SliceToStringSliceRef(items []*int64) []string {
+    strs := make([]string, len(items))
+    for i, v := range items {
+        strs[i] = strconv.Itoa(int(*v))
     }
     return strs
 }
@@ -31,11 +45,25 @@ func uint32SliceToStringSlice(items []uint32) []string {
     }
     return strs
 }
+func uint32SliceToStringSliceRef(items []*uint32) []string {
+    strs := make([]string, len(items))
+    for i, v := range items {
+        strs[i] = strconv.FormatUint(uint64(*v), 10)
+    }
+    return strs
+}
 
 func uint64SliceToStringSlice(items []uint64) []string {
     strs := make([]string, len(items))
     for i, v := range items {
         strs[i] = strconv.FormatUint(v, 10)
+    }
+    return strs
+}
+func uint64SliceToStringSliceRef(items []*uint64) []string {
+    strs := make([]string, len(items))
+    for i, v := range items {
+        strs[i] = strconv.FormatUint(*v, 10)
     }
     return strs
 }
@@ -47,6 +75,13 @@ func float32SliceToStringSlice(items []float32) []string {
     }
     return strs
 }
+func float32SliceToStringSliceRef(items []*float32) []string {
+    strs := make([]string, len(items))
+    for i, v := range items {
+        strs[i] = strconv.FormatFloat(float64(*v), 'f', -1, 32)
+    }
+    return strs
+}
 
 func float64SliceToStringSlice(items []float64) []string {
     strs := make([]string, len(items))
@@ -55,11 +90,29 @@ func float64SliceToStringSlice(items []float64) []string {
     }
     return strs
 }
+func float64SliceToStringSliceRef(items []*float64) []string {
+    strs := make([]string, len(items))
+    for i, v := range items {
+        strs[i] = strconv.FormatFloat(*v, 'f', -1, 64)
+    }
+    return strs
+}
 
 func boolSliceToStringSlice(items []bool) []string {
     strs := make([]string, len(items))
     for i, v := range items {
 	    if v {
+	        strs[i] = "true"
+	    } else {
+	        strs[i] = "false"
+	    }
+    }
+    return strs
+}
+func boolSliceToStringSliceRef(items []*bool) []string {
+    strs := make([]string, len(items))
+    for i, v := range items {
+	    if *v {
 	        strs[i] = "true"
 	    } else {
 	        strs[i] = "false"
@@ -90,14 +143,37 @@ func objSliceToStringSlice[O ObjGen](items []O) []string {
 	return strs
 }
 
-func derefArr[T any](arr []*T) []T {
-	res := make([]T, len(arr))
-	for i := range arr {
-		if arr[i] != nil {
-			res[i] = *arr[i]
-		}
+func bytesToStringSlice(items []byte) []string {
+    strs := make([]string, len(items))
+    for i, v := range items {
+        strs[i] = strconv.FormatUint(uint64(v), 10)
+    }
+    return strs
+}
+func bytesToStringSliceRef(items *[]byte) []string {
+	if items == nil {
+		return []string{}
 	}
-	return res
+    strs := make([]string, len(*items))
+    for i, v := range *items {
+        strs[i] = strconv.FormatUint(uint64(v), 10)
+    }
+    return strs
+}
+
+func bytesSliceToStringSlice(items [][]byte) []string {
+    strs := make([]string, len(items))
+    for i, v := range items {
+        strs[i] = "[" + strings.Join(bytesToStringSlice(v), ",") + "]"
+    }
+    return strs
+}
+func bytesSliceToStringSliceRef(items []*[]byte) []string {
+    strs := make([]string, len(items))
+    for i, v := range items {
+        strs[i] = "[" + strings.Join(bytesToStringSliceRef(v), ",") + "]"
+    }
+    return strs
 }
 
 func joinStringPointers(ptrs []*string, sep string) string {

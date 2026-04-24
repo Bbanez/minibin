@@ -80,6 +80,9 @@ func Read(path string) []*Schema {
 						)
 					}
 					prop.Decimals = float32(math.Pow10(int(prop.Decimals)))
+					if prop.Typ == "enum" {
+						prop.Required = true
+					}
 				}
 			}
 		}

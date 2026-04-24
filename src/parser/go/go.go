@@ -252,11 +252,13 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			)
 			reqStr = fmt.Sprintf("strconv.FormatInt(int64(o.%s), 10)", prop.GoName)
 			optArrStr = fmt.Sprintf(""+
-				"\" + strings.Join(int32SliceToStringSlice(derefArr(o.%s)), \",\") + \"",
+				"\" + strings.Join(int32SliceToStringSliceRef(o.%s), \",\") + \"",
 				prop.GoName,
 			)
 			optStr = fmt.Sprintf("strconv.FormatInt(int64(*o.%s), 10)", prop.GoName)
-			importStrconv = true
+			if !prop.Array {
+				importStrconv = true
+			}
 		case "i64":
 			reqArrStr = fmt.Sprintf(""+
 				"\" + strings.Join(int64SliceToStringSlice(o.%s), \",\") + \"",
@@ -264,11 +266,13 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			)
 			reqStr = fmt.Sprintf("strconv.FormatInt(o.%s, 10)", prop.GoName)
 			optArrStr = fmt.Sprintf(""+
-				"\" + strings.Join(int64SliceToStringSlice(derefArr(o.%s)), \",\") + \"",
+				"\" + strings.Join(int64SliceToStringSliceRef(o.%s), \",\") + \"",
 				prop.GoName,
 			)
 			optStr = fmt.Sprintf("strconv.FormatInt(*o.%s, 10)", prop.GoName)
-			importStrconv = true
+			if !prop.Array {
+				importStrconv = true
+			}
 		case "u32":
 			reqArrStr = fmt.Sprintf(""+
 				"\" + strings.Join(uint32SliceToStringSlice(o.%s), \",\") + \"",
@@ -276,11 +280,13 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			)
 			reqStr = fmt.Sprintf("strconv.FormatUint(uint64(o.%s), 10)", prop.GoName)
 			optArrStr = fmt.Sprintf(""+
-				"\" + strings.Join(uint32SliceToStringSlice(derefArr(o.%s)), \",\") + \"",
+				"\" + strings.Join(uint32SliceToStringSliceRef(o.%s), \",\") + \"",
 				prop.GoName,
 			)
-			optStr = fmt.Sprintf("strconv.FormatInt(uint64(*o.%s), 10)", prop.GoName)
-			importStrconv = true
+			optStr = fmt.Sprintf("strconv.FormatUint(uint64(*o.%s), 10)", prop.GoName)
+			if !prop.Array {
+				importStrconv = true
+			}
 		case "u64":
 			reqArrStr = fmt.Sprintf(""+
 				"\" + strings.Join(uint64SliceToStringSlice(o.%s), \",\") + \"",
@@ -288,11 +294,13 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			)
 			reqStr = fmt.Sprintf("strconv.FormatUint(o.%s, 10)", prop.GoName)
 			optArrStr = fmt.Sprintf(""+
-				"\" + strings.Join(uint64SliceToStringSlice(derefArr(o.%s)), \",\") + \"",
+				"\" + strings.Join(uint64SliceToStringSliceRef(o.%s), \",\") + \"",
 				prop.GoName,
 			)
 			optStr = fmt.Sprintf("strconv.FormatUint(*o.%s, 10)", prop.GoName)
-			importStrconv = true
+			if !prop.Array {
+				importStrconv = true
+			}
 		case "f32":
 			reqArrStr = fmt.Sprintf(""+
 				"\" + strings.Join(float32SliceToStringSlice(o.%s), \",\") + \"",
@@ -300,11 +308,13 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			)
 			reqStr = fmt.Sprintf("strconv.FormatFloat(float64(o.%s), 'f', -1, 32)", prop.GoName)
 			optArrStr = fmt.Sprintf(""+
-				"\" + strings.Join(float32SliceToStringSlice(derefArr(o.%s)), \",\") + \"",
+				"\" + strings.Join(float32SliceToStringSliceRef(o.%s), \",\") + \"",
 				prop.GoName,
 			)
 			optStr = fmt.Sprintf("strconv.FormatFloat(float64(*o.%s), 'f', -1, 32)", prop.GoName)
-			importStrconv = true
+			if !prop.Array {
+				importStrconv = true
+			}
 		case "f64":
 			reqArrStr = fmt.Sprintf(""+
 				"\" + strings.Join(float64SliceToStringSlice(o.%s), \",\") + \"",
@@ -312,11 +322,13 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			)
 			reqStr = fmt.Sprintf("strconv.FormatFloat(o.%s, 'f', -1, 64)", prop.GoName)
 			optArrStr = fmt.Sprintf(""+
-				"\" + strings.Join(float64SliceToStringSlice(derefArr(o.%s)), \",\") + \"",
+				"\" + strings.Join(float64SliceToStringSliceRef(o.%s), \",\") + \"",
 				prop.GoName,
 			)
 			optStr = fmt.Sprintf("strconv.FormatFloat(*o.%s, 'f', -1, 64)", prop.GoName)
-			importStrconv = true
+			if !prop.Array {
+				importStrconv = true
+			}
 		case "bool":
 			reqArrStr = fmt.Sprintf(""+
 				"\" + strings.Join(boolSliceToStringSlice(o.%s), \",\") + \"",
@@ -324,11 +336,13 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			)
 			reqStr = fmt.Sprintf("strconv.FormatBool(o.%s)", prop.GoName)
 			optArrStr = fmt.Sprintf(""+
-				"\" + strings.Join(boolSliceToStringSlice(derefArr(o.%s)), \",\") + \"",
+				"\" + strings.Join(boolSliceToStringSliceRef(o.%s), \",\") + \"",
 				prop.GoName,
 			)
 			optStr = fmt.Sprintf("strconv.FormatBool(*o.%s)", prop.GoName)
-			importStrconv = true
+			if !prop.Array {
+				importStrconv = true
+			}
 		case "enum":
 			reqArrStr = fmt.Sprintf(""+
 				"\\\"\" + strings.Join(enumSliceToStringSlice(o.%s), \"\\\",\\\"\") + \"\\\"",
@@ -336,10 +350,10 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			)
 			reqStr = fmt.Sprintf("\"\\\"\" + o.%s.ToStr() + \"\\\"\"", prop.GoName)
 			optArrStr = fmt.Sprintf(""+
-				"\\\"\" + strings.Join(enumSliceToStringSlice(derefArr(o.%s)), \"\\\",\\\"\") + \"\\\"",
+				"\\\"\" + strings.Join(enumSliceToStringSlice(o.%s), \"\\\",\\\"\") + \"\\\"",
 				prop.GoName,
 			)
-			optStr = fmt.Sprintf("\"\\\"\" + *o.%s.ToStr() + \"\\\"\"", prop.GoName)
+			optStr = fmt.Sprintf("\"\\\"\" + (*o.%s).ToStr() + \"\\\"\"", prop.GoName)
 		case "object":
 			reqArrStr = fmt.Sprintf(""+
 				"\" + strings.Join(objSliceToStringSlice(o.%s), \",\") + \"",
@@ -347,10 +361,21 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			)
 			reqStr = fmt.Sprintf("o.%s.ToJson()", prop.GoName)
 			optArrStr = fmt.Sprintf(""+
-				"\" + strings.Join(objSliceToStringSlice(derefArr(o.%s)), \",\") + \"",
+				"\" + strings.Join(objSliceToStringSlice(o.%s), \",\") + \"",
 				prop.GoName,
 			)
-			optStr = fmt.Sprintf("*o.%s.ToJson()", prop.GoName)
+			optStr = fmt.Sprintf("(*o.%s).ToJson()", prop.GoName)
+		case "bytes":
+			reqArrStr = fmt.Sprintf(""+
+				"\" + strings.Join(bytesSliceToStringSlice(o.%s), \",\") + \"",
+				prop.GoName,
+			)
+			reqStr = fmt.Sprintf("\"[\" + strings.Join(bytesToStringSlice(o.%s), \",\") + \"]\"", prop.GoName)
+			optArrStr = fmt.Sprintf(""+
+				"\" + strings.Join(bytesSliceToStringSliceRef(o.%s), \",\") + \"",
+				prop.GoName,
+			)
+			optStr = fmt.Sprintf("strings.Join(bytesToStringSlice(*o.%s), \",\")", prop.GoName)
 		}
 		if prop.Required {
 			if prop.Array {
@@ -659,7 +684,7 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 				"",
 			i, prop.Name,
 		)
-		if (!prop.Required && prop.Typ != "enum") || (prop.Array && prop.Typ == "object") {
+		if !prop.Required || (prop.Array && prop.Typ == "object") {
 			typ = "*" + typ
 		}
 		if prop.Array {
