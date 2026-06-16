@@ -114,43 +114,83 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 		case "string":
 			tsTyp = "string"
 			emptryValue = "''"
-			packStr = fmt.Sprintf(
-				""+
-					"    Minibin.packString(buf, this.%s, %d);\n",
-				prop.Name, i,
-			)
+			if prop.Array {
+				packStr = fmt.Sprintf(
+					""+
+						"    Minibin.packString(buf, this.%s[i], %d);\n",
+					prop.Name, i,
+				)
+			} else {
+				packStr = fmt.Sprintf(
+					""+
+						"    Minibin.packString(buf, this.%s, %d);\n",
+					prop.Name, i,
+				)
+			}
 		case "i32":
 			tsTyp = "number"
 			emptryValue = "0"
-			packStr = fmt.Sprintf(
-				""+
-					"    Minibin.packInt32(buf, this.%s, %d);\n",
-				prop.Name, i,
-			)
+			if prop.Array {
+				packStr = fmt.Sprintf(
+					""+
+						"    Minibin.packInt32(buf, this.%s[i], %d);\n",
+					prop.Name, i,
+				)
+			} else {
+				packStr = fmt.Sprintf(
+					""+
+						"    Minibin.packInt32(buf, this.%s, %d);\n",
+					prop.Name, i,
+				)
+			}
 		case "i64":
 			tsTyp = "bigint"
 			emptryValue = "BigInt(0)"
-			packStr = fmt.Sprintf(
-				""+
-					"    Minibin.packInt64(buf, this.%s, %d);\n",
-				prop.Name, i,
-			)
+			if prop.Array {
+				packStr = fmt.Sprintf(
+					""+
+						"    Minibin.packInt64(buf, this.%s[i], %d);\n",
+					prop.Name, i,
+				)
+			} else {
+				packStr = fmt.Sprintf(
+					""+
+						"    Minibin.packInt64(buf, this.%s, %d);\n",
+					prop.Name, i,
+				)
+			}
 		case "u32":
 			tsTyp = "number"
 			emptryValue = "0"
-			packStr = fmt.Sprintf(
-				""+
-					"    Minibin.packUint32(buf, this.%s, %d);\n",
-				prop.Name, i,
-			)
+			if prop.Array {
+				packStr = fmt.Sprintf(
+					""+
+						"    Minibin.packUint32(buf, this.%s[i], %d);\n",
+					prop.Name, i,
+				)
+			} else {
+				packStr = fmt.Sprintf(
+					""+
+						"    Minibin.packUint32(buf, this.%s, %d);\n",
+					prop.Name, i,
+				)
+			}
 		case "u64":
 			tsTyp = "bigint"
 			emptryValue = "BigInt(0)"
-			packStr = fmt.Sprintf(
-				""+
-					"    Minibin.packUint64(buf, this.%s, %d);\n",
-				prop.Name, i,
-			)
+			if prop.Array {
+				packStr = fmt.Sprintf(
+					""+
+						"    Minibin.packUint64(buf, this.%s[i], %d);\n",
+					prop.Name, i,
+				)
+			} else {
+				packStr = fmt.Sprintf(
+					""+
+						"    Minibin.packUint64(buf, this.%s, %d);\n",
+					prop.Name, i,
+				)
+			}
 		case "f32":
 			tsTyp = "number"
 			emptryValue = "0"
@@ -186,11 +226,19 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 		case "bool":
 			tsTyp = "boolean"
 			emptryValue = "false"
-			packStr = fmt.Sprintf(
-				""+
-					"    Minibin.packBool(buf, this.%s, %d);\n",
-				prop.Name, i,
-			)
+			if prop.Array {
+				packStr = fmt.Sprintf(
+					""+
+						"    Minibin.packBool(buf, this.%s[i], %d);\n",
+					prop.Name, i,
+				)
+			} else {
+				packStr = fmt.Sprintf(
+					""+
+						"    Minibin.packBool(buf, this.%s, %d);\n",
+					prop.Name, i,
+				)
+			}
 		case "object":
 			if prop.Array {
 				copyData += fmt.Sprintf(
@@ -222,11 +270,19 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 				"%s.newEmpty()",
 				tsTyp,
 			)
-			packStr = fmt.Sprintf(
-				""+
-					"    Minibin.packObject(buf, this.%s.pack(), %d);\n",
-				prop.Name, i,
-			)
+			if prop.Array {
+				packStr = fmt.Sprintf(
+					""+
+						"    Minibin.packObject(buf, this.%s[i].pack(), %d);\n",
+					prop.Name, i,
+				)
+			} else {
+				packStr = fmt.Sprintf(
+					""+
+						"    Minibin.packObject(buf, this.%s.pack(), %d);\n",
+					prop.Name, i,
+				)
+			}
 		case "enum":
 			tsTyp = strings.Split(*prop.Ref, ".")[1]
 			if prop.Required {
@@ -246,11 +302,19 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 				"%sDefault()",
 				tsTyp,
 			)
-			packStr = fmt.Sprintf(
-				""+
-					"    Minibin.packEnum(buf, this.%s, %d);\n",
-				prop.Name, i,
-			)
+			if prop.Array {
+				packStr = fmt.Sprintf(
+					""+
+						"    Minibin.packEnum(buf, this.%s[i], %d);\n",
+					prop.Name, i,
+				)
+			} else {
+				packStr = fmt.Sprintf(
+					""+
+						"    Minibin.packEnum(buf, this.%s, %d);\n",
+					prop.Name, i,
+				)
+			}
 		case "bytes":
 			tsTyp = "number[]"
 			emptryValue = "[]"
@@ -289,12 +353,7 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 					"        %s"+
 					"        }\n",
 				prop.Name, strings.Replace(
-					strings.Replace(
-						packStr,
-						fmt.Sprintf(", %d)", i),
-						fmt.Sprintf("[i], %d)", i),
-						1,
-					),
+					packStr,
 					".pack()[i]",
 					"[i].pack()",
 					1,
