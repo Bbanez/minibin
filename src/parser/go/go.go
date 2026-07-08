@@ -147,6 +147,54 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			"",
 		sch.PascalName,
 	)
+	copyFn := fmt.Sprintf(
+		"\n"+
+			"func (o *%s) Copy() *%s {\n"+
+			"    output := %s{}\n"+
+			"",
+		sch.PascalName, sch.PascalName, sch.PascalName,
+	)
+	primitiveCopyFnWrapper := func(propName string, arr bool, required bool, typ string) string {
+		if arr {
+			if required {
+				return fmt.Sprintf(""+
+					"    output.%s = make([]%s, len(o.%s))\n"+
+					"    copy(output.%s, o.%s)\n"+
+					"",
+					propName, typ, propName, propName, propName,
+				)
+			} else {
+				return fmt.Sprintf(""+
+					"    output.%s = make([]*%s, len(o.%s))\n"+
+					"    for i, item := range o.%s {\n"+
+					"		if item == nil {\n"+
+					"           output.%s[i] = nil\n"+
+					"	   } else {\n"+
+					"		   itemCopy := *item\n"+
+					"           output.%s[i] = &itemCopy\n"+
+					"       }\n"+
+					"    }\n"+
+					"",
+					propName, typ, propName, propName, propName, propName,
+				)
+			}
+		} else {
+			if required {
+				return fmt.Sprintf("    output.%s = o.%s\n", propName, propName)
+			} else {
+				return fmt.Sprintf(""+
+					"    if o.%s != nil {\n"+
+					"        itemCopy := *o.%s\n"+
+					"        output.%s = &itemCopy\n"+
+					"    } else {\n"+
+					"        output.%s = nil\n"+
+					"    }\n"+
+					"",
+					propName, propName, propName, propName,
+				)
+			}
+		}
+	}
 
 	newFn := fmt.Sprintf(
 		"func New%s(\n",
@@ -227,7 +275,7 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 		)
 	}
 
-	importStrconv := false
+	importStrconv := true
 	toJsonWrapper := func(prop *schema.SchemaProp) {
 		var reqArrStr string
 		var reqStr string
@@ -428,6 +476,7 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 		switch prop.Typ {
 		case "string":
 			typ = "string"
+			copyFn += primitiveCopyFnWrapper(prop.GoName, prop.Array, prop.Required, typ)
 			if prop.Required {
 				packFn += packWrapperRequired("PackString", prop.GoName, i, prop.Array, "")
 			} else {
@@ -436,6 +485,7 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			setPropFn += setPropWrapperNormal(prop.GoName, typ, i, prop.Array, prop.Required)
 		case "i32":
 			typ = "int32"
+			copyFn += primitiveCopyFnWrapper(prop.GoName, prop.Array, prop.Required, typ)
 			if prop.Required {
 				packFn += packWrapperRequired("PackInt32", prop.GoName, i, prop.Array, "")
 			} else {
@@ -444,6 +494,7 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			setPropFn += setPropWrapperNormal(prop.GoName, typ, i, prop.Array, prop.Required)
 		case "i64":
 			typ = "int64"
+			copyFn += primitiveCopyFnWrapper(prop.GoName, prop.Array, prop.Required, typ)
 			if prop.Required {
 				packFn += packWrapperRequired("PackInt64", prop.GoName, i, prop.Array, "")
 			} else {
@@ -452,6 +503,7 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			setPropFn += setPropWrapperNormal(prop.GoName, typ, i, prop.Array, prop.Required)
 		case "u32":
 			typ = "uint32"
+			copyFn += primitiveCopyFnWrapper(prop.GoName, prop.Array, prop.Required, typ)
 			if prop.Required {
 				packFn += packWrapperRequired("PackUint32", prop.GoName, i, prop.Array, "")
 			} else {
@@ -460,6 +512,7 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			setPropFn += setPropWrapperNormal(prop.GoName, typ, i, prop.Array, prop.Required)
 		case "u64":
 			typ = "uint64"
+			copyFn += primitiveCopyFnWrapper(prop.GoName, prop.Array, prop.Required, typ)
 			if prop.Required {
 				packFn += packWrapperRequired("PackUint64", prop.GoName, i, prop.Array, "")
 			} else {
@@ -468,6 +521,7 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			setPropFn += setPropWrapperNormal(prop.GoName, typ, i, prop.Array, prop.Required)
 		case "f32":
 			typ = "float32"
+			copyFn += primitiveCopyFnWrapper(prop.GoName, prop.Array, prop.Required, typ)
 			if prop.Required {
 				if prop.Array {
 					packFn += fmt.Sprintf(
@@ -532,6 +586,7 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			}
 		case "f64":
 			typ = "float64"
+			copyFn += primitiveCopyFnWrapper(prop.GoName, prop.Array, prop.Required, typ)
 			if prop.Required {
 				if prop.Array {
 					packFn += fmt.Sprintf(
@@ -596,6 +651,7 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			}
 		case "bool":
 			typ = "bool"
+			copyFn += primitiveCopyFnWrapper(prop.GoName, prop.Array, prop.Required, typ)
 			if prop.Required {
 				packFn += packWrapperRequired("PackBool", prop.GoName, i, prop.Array, "")
 			} else {
@@ -604,6 +660,7 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			setPropFn += setPropWrapperNormal(prop.GoName, typ, i, prop.Array, prop.Required)
 		case "enum":
 			typ = strings.Split(*prop.Ref, ".")[1]
+			copyFn += primitiveCopyFnWrapper(prop.GoName, prop.Array, prop.Required, typ)
 			packFn += packWrapperRequired("PackString", prop.GoName, i, prop.Array, ".ToStr()")
 			if prop.Array {
 				setPropFn += fmt.Sprintf(
@@ -626,6 +683,30 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			}
 		case "object":
 			typ = strings.Split(*prop.Ref, ".")[1]
+			if prop.Array {
+				copyFn += fmt.Sprintf(""+
+					"    output.%s = make([]*%s, len(o.%s))\n"+
+					"    for i, item := range o.%s {\n"+
+					"        output.%s[i] = item.Copy()\n"+
+					"    }\n"+
+					"",
+					prop.GoName, typ, prop.GoName, prop.GoName, prop.GoName,
+				)
+			} else {
+				if prop.Required {
+					copyFn += fmt.Sprintf("    output.%s = *o.%s.Copy()\n", prop.GoName, prop.GoName)
+				} else {
+					copyFn += fmt.Sprintf(""+
+						"    if o.%s != nil {\n"+
+						"        output.%s = o.%s.Copy()\n"+
+						"    } else {\n"+
+						"        output.%s = nil\n"+
+						"    }\n"+
+						"",
+						prop.GoName, prop.GoName, prop.GoName, prop.GoName,
+					)
+				}
+			}
 			if prop.Required {
 				packFn += packWrapperRequired("PackObject", prop.GoName, i, prop.Array, ".Pack()")
 			} else {
@@ -746,7 +827,7 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 	getPropNameFn += fmt.Sprintf(
 		"" +
 			"    default:\n" +
-			"        return \"__unknown__\"+\"[\"+string(pos)+\"]\"\n" +
+			"        return \"__unknown__\"+\"[\"+strconv.FormatInt(int64(pos), 10)+\"]\"\n" +
 			"    }\n" +
 			"}\n",
 	)
@@ -775,6 +856,7 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			"}\n",
 		sch.PascalName, sch.PascalName, sch.PascalName, sch.PascalName,
 	)
+	copyFn += "    return &output\n}\n"
 	oStruct += "}\n\n"
 	for i := range sch.Props {
 		prop := sch.Props[i]
@@ -818,6 +900,6 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 	}
 	importPacks += ")\n\n"
 	output.Content = "package minibin\n\n" + importPacks
-	output.Content += oStruct + newFn + fns + toJsonFn + setPropFn + getPropNameFn + packFn + unpackFn
+	output.Content += oStruct + newFn + fns + toJsonFn + setPropFn + getPropNameFn + packFn + unpackFn + copyFn
 	return &output
 }
