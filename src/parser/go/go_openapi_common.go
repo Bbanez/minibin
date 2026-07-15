@@ -102,6 +102,9 @@ func stringRef(s string) *string {
 }
 
 func toCamelCase(s string) string {
+	if s == "" {
+		return s
+	}
 	s = strings.ToLower(s[0:1]) + s[1:]
 	var i = 0
 	for i < len(s) {
@@ -110,6 +113,9 @@ func toCamelCase(s string) string {
 			shouldSplit = true
 		}
 		if shouldSplit {
+			if i+1 >= len(s) {
+				return s[:i]
+			}
 			s = s[:i] + strings.ToUpper(s[i+1:i+2]) + s[i+2:]
 			i += 2
 		} else {
@@ -127,7 +133,11 @@ func EnumToOpenApiSchema(name string, enum []string) (string, OpenApiObjectSchem
 }
 
 func StructToOpenApiRef(obj any) string {
-	return fmt.Sprintf("#/components/schemas/%s", reflect.TypeOf(obj).Name())
+	typ := reflect.TypeOf(obj)
+	for typ.Kind() == reflect.Pointer {
+		typ = typ.Elem()
+	}
+	return fmt.Sprintf("#/components/schemas/%s", typ.Name())
 }
 
 func StructToOpenApiSchema(obj any) (string, OpenApiObjectSchema) {
@@ -135,16 +145,24 @@ func StructToOpenApiSchema(obj any) (string, OpenApiObjectSchema) {
 	outputProps := make(map[string]OpenApiObjectSchema)
 	typ := reflect.TypeOf(obj)
 	val := reflect.ValueOf(obj)
+	for typ.Kind() == reflect.Pointer {
+		typ = typ.Elem()
+		val = val.Elem()
+	}
 	requiredPropNames := []string{}
 	for i := 0; i < val.NumField(); i++ {
 		key := typ.Field(i).Name
 		field := val.Field(i)
-		value := field.Interface()
 		valueType := field.Type()
-		valueTypeName := field.Type().Name()
+		for valueType.Kind() == reflect.Pointer || valueType.Kind() == reflect.Slice {
+			valueType = valueType.Elem()
+		}
+		valueTypeName := valueType.Name()
 		camelKey := toCamelCase(key)
 		primitiveTypes := [...]string{
 			"string",
+			"int32",
+			"int64",
 			"uint32",
 			"uint64",
 			"float32",
@@ -153,7 +171,7 @@ func StructToOpenApiSchema(obj any) (string, OpenApiObjectSchema) {
 		}
 		if slices.Contains(primitiveTypes[:], valueTypeName) {
 			propType := fmt.Sprintf("%s", valueType)
-			isArr := strings.Contains(propType, "[]")
+			isArr := field.Type().Kind() == reflect.Slice
 			propType = strings.ReplaceAll(propType, "[]", "")
 			propType = strings.ReplaceAll(propType, "*", "")
 			if strings.Contains(propType, "int") || strings.Contains(propType, "float") {
@@ -176,7 +194,7 @@ func StructToOpenApiSchema(obj any) (string, OpenApiObjectSchema) {
 			}
 		} else {
 			propType := fmt.Sprintf("%s", valueType)
-			isArr := strings.Contains(valueTypeName, "[]")
+			isArr := field.Type().Kind() == reflect.Slice
 			parts := strings.Split(propType, ".")
 			propType = parts[len(parts)-1]
 			propType = strings.ReplaceAll(propType, "[]", "")
@@ -196,8 +214,7 @@ func StructToOpenApiSchema(obj any) (string, OpenApiObjectSchema) {
 				}
 			}
 		}
-		valueStr := fmt.Sprintf("%v", value)
-		if valueStr != "<nil>" {
+		if typ.Field(i).Tag.Get("minibin") == "required" {
 			requiredPropNames = append(requiredPropNames, camelKey)
 		}
 	}

@@ -1,6 +1,7 @@
 package gotests
 
 import (
+	"encoding/json"
 	"reflect"
 	"testing"
 
@@ -148,5 +149,38 @@ func TestAllTypesDocumentRejectsMalformedPayloads(t *testing.T) {
 		if _, err := m.UnpackAllTypesDocument(payload, nil); err == nil {
 			t.Fatalf("expected malformed payload %v to fail", payload)
 		}
+	}
+}
+
+func TestAllTypesDocumentRejectsMismatchedWireType(t *testing.T) {
+	// Field 0 is Id (string); encode it with the int32 wire tag instead.
+	if _, err := m.UnpackAllTypesDocument([]byte{0, 0x20, 0, 1}, nil); err == nil {
+		t.Fatal("expected mismatched wire type to fail")
+	}
+}
+
+func TestAllTypesDocumentToJsonEscapesStrings(t *testing.T) {
+	document := &m.AllTypesDocument{Id: "quote: \" and newline: \n", State: m.LIFECYCLE_DRAFT}
+	var decoded map[string]any
+	if err := json.Unmarshal([]byte(document.ToJson()), &decoded); err != nil {
+		t.Fatalf("ToJson returned invalid JSON: %v", err)
+	}
+	if decoded["id"] != document.Id {
+		t.Fatalf("JSON value mismatch: %#v", decoded)
+	}
+}
+
+func TestAllTypesDocumentUsesEnumWireTag(t *testing.T) {
+	document := &m.AllTypesDocument{State: m.LIFECYCLE_DRAFT}
+	packed := document.Pack()
+	found := false
+	for i := 0; i+1 < len(packed); i++ {
+		if packed[i] == 32 && packed[i+1]>>4 == 10 {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected enum wire tag 10, got payload %v", packed)
 	}
 }

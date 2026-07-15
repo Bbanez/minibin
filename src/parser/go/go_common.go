@@ -26,14 +26,14 @@ func int32SliceToStringSliceRef(items []*int32) []string {
 func int64SliceToStringSlice(items []int64) []string {
     strs := make([]string, len(items))
     for i, v := range items {
-        strs[i] = strconv.Itoa(int(v))
+        strs[i] = strconv.FormatInt(v, 10)
     }
     return strs
 }
 func int64SliceToStringSliceRef(items []*int64) []string {
     strs := make([]string, len(items))
     for i, v := range items {
-        strs[i] = strconv.Itoa(int(*v))
+        strs[i] = strconv.FormatInt(*v, 10)
     }
     return strs
 }
@@ -132,6 +132,14 @@ func enumSliceToStringSlice[E EnumGen](items []E) []string {
 	return strs
 }
 
+func enumSliceToJSONStringSlice[E EnumGen](items []E) []string {
+	strs := make([]string, len(items))
+	for i, v := range items {
+		strs[i] = strconv.Quote(v.ToStr())
+	}
+	return strs
+}
+
 type ObjGen interface {
 	ToJson() string
 }
@@ -188,6 +196,26 @@ func joinStringPointers(ptrs []*string, sep string) string {
     return strings.Join(strs, sep)
 }
 
+func quoteStrings(items []string) []string {
+	quoted := make([]string, len(items))
+	for i, item := range items {
+		quoted[i] = strconv.Quote(item)
+	}
+	return quoted
+}
+
+func quoteStringPointers(items []*string) []string {
+	quoted := make([]string, len(items))
+	for i, item := range items {
+		if item == nil {
+			quoted[i] = "null"
+		} else {
+			quoted[i] = strconv.Quote(*item)
+		}
+	}
+	return quoted
+}
+
 func Compress(data []byte) ([]byte, error) {
 	return data, nil
 }
@@ -197,7 +225,7 @@ func Decompress(compressed []byte) ([]byte, error) {
 }
 
 type UnpackabeEntry interface {
-	SetPropAtPos(pos int, value any, level string)
+	SetPropAtPos(pos int, value any, level string) error
 	GetPropNameAtPos(pos int) string
 }
 
@@ -236,56 +264,56 @@ func Unpack[T UnpackabeEntry](o T, b []byte, level string) error {
 			}
 			data, next := UnpackString(bytes, atByte, lenD)
 			atByte = next
-			o.SetPropAtPos(pos, data, lvl)
+			if err := o.SetPropAtPos(pos, data, lvl); err != nil { return err }
 		case 2:
 			if length > 4 || length+1 > remaining {
 				return fmt.Errorf("invalid or truncated data for %s", lvl)
 			}
 			data, next := UnpackInt32(bytes, atByte, lenD)
 			atByte = next
-			o.SetPropAtPos(pos, data, lvl)
+			if err := o.SetPropAtPos(pos, data, lvl); err != nil { return err }
 		case 3:
 			if length > 8 || length+1 > remaining {
 				return fmt.Errorf("invalid or truncated data for %s", lvl)
 			}
 			data, next := UnpackInt64(bytes, atByte, lenD)
 			atByte = next
-			o.SetPropAtPos(pos, data, lvl)
+			if err := o.SetPropAtPos(pos, data, lvl); err != nil { return err }
 		case 4:
 			if length > 4 || length > remaining {
 				return fmt.Errorf("invalid or truncated data for %s", lvl)
 			}
 			data, next := UnpackUint32(bytes, atByte, lenD)
 			atByte = next
-			o.SetPropAtPos(pos, data, lvl)
+			if err := o.SetPropAtPos(pos, data, lvl); err != nil { return err }
 		case 5:
 			if length > 8 || length > remaining {
 				return fmt.Errorf("invalid or truncated data for %s", lvl)
 			}
 			data, next := UnpackUint64(bytes, atByte, lenD)
 			atByte = next
-			o.SetPropAtPos(pos, data, lvl)
+			if err := o.SetPropAtPos(pos, data, lvl); err != nil { return err }
 		case 6:
 			if length > 4 || length+1 > remaining {
 				return fmt.Errorf("invalid or truncated data for %s", lvl)
 			}
 			data, next := UnpackInt32(bytes, atByte, lenD)
 			atByte = next
-			o.SetPropAtPos(pos, data, lvl)
+			if err := o.SetPropAtPos(pos, data, lvl); err != nil { return err }
 		case 7:
 			if length > 8 || length+1 > remaining {
 				return fmt.Errorf("invalid or truncated data for %s", lvl)
 			}
 			data, next := UnpackInt64(bytes, atByte, lenD)
 			atByte = next
-			o.SetPropAtPos(pos, data, lvl)
+			if err := o.SetPropAtPos(pos, data, lvl); err != nil { return err }
 		case 8:
 			if lenD != 0 || atByte >= len(bytes) {
 				return fmt.Errorf("invalid data length for %s", lvl)
 			}
 			data, next := UnpackBool(bytes, atByte)
 			atByte = next
-			o.SetPropAtPos(pos, data, lvl)
+			if err := o.SetPropAtPos(pos, data, lvl); err != nil { return err }
 		case 9:
 			if length > 4 || length > remaining {
 				return fmt.Errorf("invalid or truncated length for %s", lvl)
@@ -296,7 +324,7 @@ func Unpack[T UnpackabeEntry](o T, b []byte, level string) error {
 			}
 			data, next := UnpackObject(bytes, atByte, lenD)
 			atByte = next
-			o.SetPropAtPos(pos, data, lvl)
+			if err := o.SetPropAtPos(pos, data, lvl); err != nil { return err }
 		case 10:
 			if length > 4 || length > remaining {
 				return fmt.Errorf("invalid or truncated length for %s", lvl)
@@ -307,7 +335,7 @@ func Unpack[T UnpackabeEntry](o T, b []byte, level string) error {
 			}
 			data, next := UnpackString(bytes, atByte, lenD)
 			atByte = next
-			o.SetPropAtPos(pos, data, lvl)
+			if err := o.SetPropAtPos(pos, data, lvl); err != nil { return err }
 		case 11:
 			if length > 4 || length > remaining {
 				return fmt.Errorf("invalid or truncated length for %s", lvl)
@@ -318,7 +346,7 @@ func Unpack[T UnpackabeEntry](o T, b []byte, level string) error {
 			}
 			data, next := UnpackBytes(bytes, atByte, lenD)
 			atByte = next
-			o.SetPropAtPos(pos, data, lvl)
+			if err := o.SetPropAtPos(pos, data, lvl); err != nil { return err }
 		default:
 			return fmt.Errorf(
 				"Invalid datatype %s",

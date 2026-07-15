@@ -3,11 +3,35 @@ package parser_go
 import (
 	"fmt"
 	"strings"
+	"unicode"
 
 	p "github.com/bbanez/minibin/src/parser"
 	"github.com/bbanez/minibin/src/schema"
 	"github.com/bbanez/minibin/src/utils"
 )
+
+func validGoIdentifier(name string) bool {
+	if name == "" || (!unicode.IsLetter(rune(name[0])) && name[0] != '_') {
+		return false
+	}
+	for _, r := range name[1:] {
+		if !unicode.IsLetter(r) && !unicode.IsDigit(r) && r != '_' {
+			return false
+		}
+	}
+	return true
+}
+
+func goRefType(ref *string, path string) string {
+	if ref == nil {
+		panic(fmt.Errorf("missing ref in %s", path))
+	}
+	parts := strings.Split(*ref, ".")
+	if len(parts) != 2 || !validGoIdentifier(parts[1]) {
+		panic(fmt.Errorf("invalid ref %q in %s", *ref, path))
+	}
+	return parts[1]
+}
 
 func Parse(schemas []*schema.Schema, args *utils.Args) []*p.ParserOutputItem {
 	outputItems := []*p.ParserOutputItem{
@@ -38,6 +62,9 @@ func Parse(schemas []*schema.Schema, args *utils.Args) []*p.ParserOutputItem {
 }
 
 func parseEnum(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
+	if !validGoIdentifier(sch.PascalName) {
+		panic(fmt.Errorf("invalid Go schema name %q in %s", sch.Name, sch.RPath))
+	}
 	output := p.ParserOutputItem{}
 	cont := "package minibin\n\nimport \"fmt\"\n\n"
 	cont += fmt.Sprintf("type %s string\n\nconst (\n", sch.PascalName)
@@ -118,19 +145,16 @@ func parseEnum(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 }
 
 func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
+	if !validGoIdentifier(sch.PascalName) {
+		panic(fmt.Errorf("invalid Go schema name %q in %s", sch.Name, sch.RPath))
+	}
 	if len(sch.Props) > 256 {
 		panic(fmt.Errorf("Go minibin supports at most 256 properties per object: %s has %d", sch.RPath, len(sch.Props)))
 	}
 	output := p.ParserOutputItem{}
 	oStruct := "type " + sch.PascalName + " struct {\n"
 	fns := ""
-	toJsonFn := fmt.Sprintf(
-		"\n"+
-			"func (o *%s) ToJson() string {\n"+
-			"    result := []string{}\n"+
-			"",
-		sch.PascalName,
-	)
+	toJsonFn := fmt.Sprintf("\nfunc (o *%s) ToJson() string {\n    result := []string{}\n", sch.PascalName)
 	packFn := fmt.Sprintf(
 		"\n"+
 			"func (o *%s) Pack() []byte {\n    result := []byte{}\n",
@@ -138,7 +162,7 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 	)
 	setPropFn := fmt.Sprintf(
 		"\n"+
-			"func (o *%s) SetPropAtPos(pos int, v any, level string) {\n"+
+			"func (o *%s) SetPropAtPos(pos int, v any, level string) error {\n"+
 			"    switch pos {\n"+
 			"",
 		sch.PascalName,
@@ -262,7 +286,8 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			return fmt.Sprintf(
 				""+
 					"    case %d:\n"+
-					"        d := v.(%s)\n"+
+					"        d, ok := v.(%s)\n"+
+					"        if !ok { return fmt.Errorf(\"invalid datatype for %%s\", level) }\n"+
 					"        o.%s = append(o.%s, %sd)\n"+
 					"",
 				pos, propType, propName, propName, pointer,
@@ -271,7 +296,8 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 		return fmt.Sprintf(
 			""+
 				"    case %d:\n"+
-				"        d := v.(%s)\n"+
+				"        d, ok := v.(%s)\n"+
+				"        if !ok { return fmt.Errorf(\"invalid datatype for %%s\", level) }\n"+
 				"        o.%s = %sd\n"+
 				"",
 			pos, propType, propName, pointer,
@@ -286,68 +312,38 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 		var optStr string
 		switch prop.Typ {
 		case "string":
-			reqArrStr = fmt.Sprintf(
-				"\\\"\" + strings.Join(o.%s, \"\\\",\\\"\") + \"\\\"",
-				prop.GoName,
-			)
-			reqStr = "\"\\\"\" + o." + prop.GoName + " + \"\\\"\""
-			optArrStr = fmt.Sprintf(
-				"\\\"\" + joinStringPointers(o.%s, \"\\\",\\\"\") + \"\\\"",
-				prop.GoName,
-			)
-			optStr = "\"\\\"\" + *o." + prop.GoName + " + \"\\\"\""
+			reqArrStr = fmt.Sprintf("strings.Join(quoteStrings(o.%s), \",\")", prop.GoName)
+			reqStr = "strconv.Quote(o." + prop.GoName + ")"
+			optArrStr = fmt.Sprintf("strings.Join(quoteStringPointers(o.%s), \",\")", prop.GoName)
+			optStr = "strconv.Quote(*o." + prop.GoName + ")"
 		case "i32":
-			reqArrStr = fmt.Sprintf(""+
-				"\" + strings.Join(int32SliceToStringSlice(o.%s), \",\") + \"",
-				prop.GoName,
-			)
+			reqArrStr = fmt.Sprintf("\" + strings.Join(int32SliceToStringSlice(o.%s), \",\") + \"", prop.GoName)
 			reqStr = fmt.Sprintf("strconv.FormatInt(int64(o.%s), 10)", prop.GoName)
-			optArrStr = fmt.Sprintf(""+
-				"\" + strings.Join(int32SliceToStringSliceRef(o.%s), \",\") + \"",
-				prop.GoName,
-			)
+			optArrStr = fmt.Sprintf("\" + strings.Join(int32SliceToStringSliceRef(o.%s), \",\") + \"", prop.GoName)
 			optStr = fmt.Sprintf("strconv.FormatInt(int64(*o.%s), 10)", prop.GoName)
 			if !prop.Array {
 				importStrconv = true
 			}
 		case "i64":
-			reqArrStr = fmt.Sprintf(""+
-				"\" + strings.Join(int64SliceToStringSlice(o.%s), \",\") + \"",
-				prop.GoName,
-			)
+			reqArrStr = fmt.Sprintf("\" + strings.Join(int64SliceToStringSlice(o.%s), \",\") + \"", prop.GoName)
 			reqStr = fmt.Sprintf("strconv.FormatInt(o.%s, 10)", prop.GoName)
-			optArrStr = fmt.Sprintf(""+
-				"\" + strings.Join(int64SliceToStringSliceRef(o.%s), \",\") + \"",
-				prop.GoName,
-			)
+			optArrStr = fmt.Sprintf("\" + strings.Join(int64SliceToStringSliceRef(o.%s), \",\") + \"", prop.GoName)
 			optStr = fmt.Sprintf("strconv.FormatInt(*o.%s, 10)", prop.GoName)
 			if !prop.Array {
 				importStrconv = true
 			}
 		case "u32":
-			reqArrStr = fmt.Sprintf(""+
-				"\" + strings.Join(uint32SliceToStringSlice(o.%s), \",\") + \"",
-				prop.GoName,
-			)
+			reqArrStr = fmt.Sprintf("\" + strings.Join(uint32SliceToStringSlice(o.%s), \",\") + \"", prop.GoName)
 			reqStr = fmt.Sprintf("strconv.FormatUint(uint64(o.%s), 10)", prop.GoName)
-			optArrStr = fmt.Sprintf(""+
-				"\" + strings.Join(uint32SliceToStringSliceRef(o.%s), \",\") + \"",
-				prop.GoName,
-			)
+			optArrStr = fmt.Sprintf("\" + strings.Join(uint32SliceToStringSliceRef(o.%s), \",\") + \"", prop.GoName)
 			optStr = fmt.Sprintf("strconv.FormatUint(uint64(*o.%s), 10)", prop.GoName)
 			if !prop.Array {
 				importStrconv = true
 			}
 		case "u64":
-			reqArrStr = fmt.Sprintf(""+
-				"\" + strings.Join(uint64SliceToStringSlice(o.%s), \",\") + \"",
-				prop.GoName,
-			)
+			reqArrStr = fmt.Sprintf("\" + strings.Join(uint64SliceToStringSlice(o.%s), \",\") + \"", prop.GoName)
 			reqStr = fmt.Sprintf("strconv.FormatUint(o.%s, 10)", prop.GoName)
-			optArrStr = fmt.Sprintf(""+
-				"\" + strings.Join(uint64SliceToStringSliceRef(o.%s), \",\") + \"",
-				prop.GoName,
-			)
+			optArrStr = fmt.Sprintf("\" + strings.Join(uint64SliceToStringSliceRef(o.%s), \",\") + \"", prop.GoName)
 			optStr = fmt.Sprintf("strconv.FormatUint(*o.%s, 10)", prop.GoName)
 			if !prop.Array {
 				importStrconv = true
@@ -396,15 +392,15 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			}
 		case "enum":
 			reqArrStr = fmt.Sprintf(""+
-				"\\\"\" + strings.Join(enumSliceToStringSlice(o.%s), \"\\\",\\\"\") + \"\\\"",
+				"strings.Join(enumSliceToJSONStringSlice(o.%s), \",\")",
 				prop.GoName,
 			)
-			reqStr = fmt.Sprintf("\"\\\"\" + o.%s.ToStr() + \"\\\"\"", prop.GoName)
+			reqStr = fmt.Sprintf("strconv.Quote(o.%s.ToStr())", prop.GoName)
 			optArrStr = fmt.Sprintf(""+
-				"\\\"\" + strings.Join(enumSliceToStringSlice(o.%s), \"\\\",\\\"\") + \"\\\"",
+				"strings.Join(enumSliceToJSONStringSlice(o.%s), \",\")",
 				prop.GoName,
 			)
-			optStr = fmt.Sprintf("\"\\\"\" + (*o.%s).ToStr() + \"\\\"\"", prop.GoName)
+			optStr = fmt.Sprintf("strconv.Quote((*o.%s).ToStr())", prop.GoName)
 		case "object":
 			reqArrStr = fmt.Sprintf(""+
 				"\" + strings.Join(objSliceToStringSlice(o.%s), \",\") + \"",
@@ -426,7 +422,7 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 				"\" + strings.Join(bytesSliceToStringSliceRef(o.%s), \",\") + \"",
 				prop.GoName,
 			)
-			optStr = fmt.Sprintf("strings.Join(bytesToStringSlice(*o.%s), \",\")", prop.GoName)
+			optStr = fmt.Sprintf("\"[\" + strings.Join(bytesToStringSlice(*o.%s), \",\") + \"]\"", prop.GoName)
 		}
 		if prop.Required {
 			if prop.Array {
@@ -470,11 +466,15 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			toJsonFn += "    }\n"
 		}
 	}
+	_ = toJsonWrapper
 
 	longestNameLen := 1
 	longestTypeLen := 1
 	for i := range sch.Props {
 		prop := sch.Props[i]
+		if !validGoIdentifier(prop.GoName) {
+			panic(fmt.Errorf("invalid Go property name %q in %s.props[%d]", prop.Name, sch.RPath, i))
+		}
 		typ := ""
 		switch prop.Typ {
 		case "string":
@@ -570,7 +570,8 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 				setPropFn += fmt.Sprintf(
 					""+
 						"    case %d:\n"+
-						"        ud := v.(int32)\n"+
+						"        ud, ok := v.(int32)\n"+
+						"        if !ok { return fmt.Errorf(\"invalid datatype for %%s\", level) }\n"+
 						"        d := float32(ud) / %f\n"+
 						"        o.%s = append(o.%s, %sd)\n"+
 						"",
@@ -580,7 +581,8 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 				setPropFn += fmt.Sprintf(
 					""+
 						"    case %d:\n"+
-						"        ud := v.(int32)\n"+
+						"        ud, ok := v.(int32)\n"+
+						"        if !ok { return fmt.Errorf(\"invalid datatype for %%s\", level) }\n"+
 						"        d := float32(ud) / %f\n"+
 						"        o.%s = %sd\n"+
 						"",
@@ -635,7 +637,8 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 				setPropFn += fmt.Sprintf(
 					""+
 						"    case %d:\n"+
-						"        ud := v.(int64)\n"+
+						"        ud, ok := v.(int64)\n"+
+						"        if !ok { return fmt.Errorf(\"invalid datatype for %%s\", level) }\n"+
 						"        d := float64(ud) / %f\n"+
 						"        o.%s = append(o.%s, %sd)\n"+
 						"",
@@ -645,7 +648,8 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 				setPropFn += fmt.Sprintf(
 					""+
 						"    case %d:\n"+
-						"        ud := v.(int64)\n"+
+						"        ud, ok := v.(int64)\n"+
+						"        if !ok { return fmt.Errorf(\"invalid datatype for %%s\", level) }\n"+
 						"        d := float64(ud) / %f\n"+
 						"        o.%s = %sd\n"+
 						"",
@@ -662,14 +666,15 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			}
 			setPropFn += setPropWrapperNormal(prop.GoName, typ, i, prop.Array, prop.Required)
 		case "enum":
-			typ = strings.Split(*prop.Ref, ".")[1]
+			typ = goRefType(prop.Ref, fmt.Sprintf("%s.props[%d]", sch.RPath, i))
 			copyFn += primitiveCopyFnWrapper(prop.GoName, prop.Array, prop.Required, typ)
-			packFn += packWrapperRequired("PackString", prop.GoName, i, prop.Array, ".ToStr()")
+			packFn += packWrapperRequired("PackEnum", prop.GoName, i, prop.Array, ".ToStr()")
 			if prop.Array {
 				setPropFn += fmt.Sprintf(
 					""+
 						"    case %d:\n"+
-						"        d := v.(string)\n"+
+						"        d, ok := v.(string)\n"+
+						"        if !ok { return fmt.Errorf(\"invalid datatype for %%s\", level) }\n"+
 						"        o.%s = append(o.%s, %sFromStr(d))\n"+
 						"",
 					i, prop.GoName, prop.GoName, typ,
@@ -678,19 +683,20 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 				setPropFn += fmt.Sprintf(
 					""+
 						"    case %d:\n"+
-						"        d := v.(string)\n"+
+						"        d, ok := v.(string)\n"+
+						"        if !ok { return fmt.Errorf(\"invalid datatype for %%s\", level) }\n"+
 						"        o.%s = %sFromStr(d)\n"+
 						"",
 					i, prop.GoName, typ,
 				)
 			}
 		case "object":
-			typ = strings.Split(*prop.Ref, ".")[1]
+			typ = goRefType(prop.Ref, fmt.Sprintf("%s.props[%d]", sch.RPath, i))
 			if prop.Array {
 				copyFn += fmt.Sprintf(""+
 					"    output.%s = make([]*%s, len(o.%s))\n"+
 					"    for i, item := range o.%s {\n"+
-					"        output.%s[i] = item.Copy()\n"+
+					"        if item != nil { output.%s[i] = item.Copy() }\n"+
 					"    }\n"+
 					"",
 					prop.GoName, typ, prop.GoName, prop.GoName, prop.GoName,
@@ -719,12 +725,12 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 				setPropFn += fmt.Sprintf(
 					""+
 						"    case %d:\n"+
-						"        d := v.([]byte)\n"+
+						"        d, ok := v.([]byte)\n"+
+						"        if !ok { return fmt.Errorf(\"invalid datatype for %%s\", level) }\n"+
 						"        lvl := level+\".\"+o.GetPropNameAtPos(pos)\n"+
 						"        obj, err := Unpack%s(d, &lvl)\n"+
-						"        if err == nil {\n"+
-						"            o.%s = append(o.%s, obj)\n"+
-						"        }\n"+
+						"        if err != nil { return err }\n"+
+						"        o.%s = append(o.%s, obj)\n"+
 						"",
 					i, typ, prop.GoName, prop.GoName,
 				)
@@ -736,12 +742,12 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 				setPropFn += fmt.Sprintf(
 					""+
 						"    case %d:\n"+
-						"        d := v.([]byte)\n"+
+						"        d, ok := v.([]byte)\n"+
+						"        if !ok { return fmt.Errorf(\"invalid datatype for %%s\", level) }\n"+
 						"        lvl := level+\".\"+o.GetPropNameAtPos(pos)\n"+
 						"        obj, err := Unpack%s(d, &lvl)\n"+
-						"        if err == nil {\n"+
-						"            o.%s = %sobj\n"+
-						"        }\n"+
+						"        if err != nil { return err }\n"+
+						"        o.%s = %sobj\n"+
 						"",
 					i, typ, prop.GoName, deref,
 				)
@@ -789,13 +795,17 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 				bson = fmt.Sprintf(" bson:\"%s\"", prop.Name)
 			}
 		}
+		requiredTag := ""
+		if prop.Required {
+			requiredTag = " minibin:\"required\""
+		}
 		desc := "    "
 		if prop.Desc != "" {
 			desc = fmt.Sprintf("    // %s\n    ", prop.Desc)
 		}
 		oStruct += fmt.Sprintf(
-			"%s%s$name%s$type`json:\"%s,omitempty\"%s`\n",
-			desc, prop.GoName, typ, prop.Name, bson,
+			"%s%s$name%s$type`json:\"%s,omitempty\"%s%s`\n",
+			desc, prop.GoName, typ, prop.Name, bson, requiredTag,
 		)
 		fns += fmt.Sprintf(
 			"func (o *%s) Get%s() %s {\n    return o.%s\n}\n",
@@ -819,12 +829,11 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 		"",
 		sch.PascalName, sch.PascalName, sch.PascalName,
 	)
-	toJsonFn += "" +
-		"    return \"{\" + strings.Join(result, \",\") + \"}\"\n" +
-		"}\n"
+	toJsonFn += "    return \"{\" + strings.Join(result, \",\") + \"}\"\n}\n"
 	setPropFn += fmt.Sprintf(
 		"" +
 			"    }\n" +
+			"    return nil\n" +
 			"}\n",
 	)
 	getPropNameFn += fmt.Sprintf(
@@ -896,10 +905,11 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 	output.Path = strings.ReplaceAll(output.Path, "-", "_")
 	output.Path = "obj_" + output.Path + ".go"
 	importPacks := "import (\n"
-	importPacks += "	\"encoding/json\"\n"
-	importPacks += "	\"strings\"\n"
+	importPacks += "\t\"encoding/json\"\n"
+	importPacks += "\t\"fmt\"\n"
+	importPacks += "\t\"strings\"\n"
 	if importStrconv {
-		importPacks += "	\"strconv\"\n"
+		importPacks += "\t\"strconv\"\n"
 	}
 	importPacks += ")\n\n"
 	output.Content = "package minibin\n\n" + importPacks
