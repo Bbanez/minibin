@@ -152,10 +152,20 @@ func StructToOpenApiSchema(obj any) (string, OpenApiObjectSchema) {
 	for i := 0; i < typ.NumField(); i++ {
 		key := typ.Field(i).Name
 		fieldType := typ.Field(i).Type
-		if fieldType.Kind() == reflect.Slice && fieldType.Elem().Kind() == reflect.Uint8 {
+		byteType := fieldType
+		for byteType.Kind() == reflect.Pointer || byteType.Kind() == reflect.Slice {
+			byteType = byteType.Elem()
+		}
+		if byteType.Kind() == reflect.Uint8 {
 			propType := "string"
 			format := "byte"
-			outputProps[toCamelCase(key)] = OpenApiObjectSchema{Type: &propType, Format: &format}
+			isArr := fieldType.Kind() == reflect.Slice && fieldType.Elem().Kind() != reflect.Uint8
+			if isArr {
+				arrType := "array"
+				outputProps[toCamelCase(key)] = OpenApiObjectSchema{Type: &arrType, Items: &OpenApiObjectSchema{Type: &propType, Format: &format}}
+			} else {
+				outputProps[toCamelCase(key)] = OpenApiObjectSchema{Type: &propType, Format: &format}
+			}
 			if typ.Field(i).Tag.Get("minibin") == "required" {
 				requiredPropNames = append(requiredPropNames, toCamelCase(key))
 			}

@@ -8,6 +8,15 @@ import (
 	"strconv"
 )
 
+const maxUint32 = ^uint32(0)
+
+func uint32Length(length int) uint32 {
+	if uint64(length) > uint64(maxUint32) {
+		panic("minibin payload exceeds uint32 length limit")
+	}
+	return uint32(length)
+}
+
 func int32SliceToStringSlice(items []int32) []string {
     strs := make([]string, len(items))
     for i, v := range items {
@@ -135,7 +144,7 @@ func enumSliceToStringSlice[E EnumGen](items []E) []string {
 func enumSliceToJSONStringSlice[E EnumGen](items []E) []string {
 	strs := make([]string, len(items))
 	for i, v := range items {
-		strs[i] = strconv.Quote(v.ToStr())
+		strs[i] = jsonQuote(v.ToStr())
 	}
 	return strs
 }
@@ -208,7 +217,7 @@ func joinStringPointers(ptrs []*string, sep string) string {
 func quoteStrings(items []string) []string {
 	quoted := make([]string, len(items))
 	for i, item := range items {
-		quoted[i] = strconv.Quote(item)
+		quoted[i] = jsonQuote(item)
 	}
 	return quoted
 }
@@ -219,10 +228,48 @@ func quoteStringPointers(items []*string) []string {
 		if item == nil {
 			quoted[i] = "null"
 		} else {
-			quoted[i] = strconv.Quote(*item)
+			quoted[i] = jsonQuote(*item)
 		}
 	}
 	return quoted
+}
+
+func jsonQuote(value string) string {
+	for i := 0; i < len(value); i++ {
+		if value[i] < 0x20 || value[i] == '"' || value[i] == '\\' {
+			var output strings.Builder
+			output.Grow(len(value) + 2)
+			output.WriteByte('"')
+			for j := 0; j < len(value); j++ {
+				switch value[j] {
+				case '"', '\\':
+					output.WriteByte('\\')
+					output.WriteByte(value[j])
+				case '\b':
+					output.WriteString("\\b")
+				case '\f':
+					output.WriteString("\\f")
+				case '\n':
+					output.WriteString("\\n")
+				case '\r':
+					output.WriteString("\\r")
+				case '\t':
+					output.WriteString("\\t")
+				default:
+					if value[j] < 0x20 {
+						output.WriteString("\\u00")
+						output.WriteByte("0123456789abcdef"[value[j]>>4])
+						output.WriteByte("0123456789abcdef"[value[j]&0x0f])
+					} else {
+						output.WriteByte(value[j])
+					}
+				}
+			}
+			output.WriteByte('"')
+			return output.String()
+		}
+	}
+	return "\"" + value + "\""
 }
 
 func Compress(data []byte) ([]byte, error) {
@@ -377,7 +424,7 @@ func unpack[T UnpackabeEntry](o T, b []byte, level string, depth int) error {
 
 func PackString(s string, pos int) []byte {
 	data := []byte(s)
-	lenD, dataLenBytes := SplitUint32(uint32(len(data)))
+	lenD, dataLenBytes := SplitUint32(uint32Length(len(data)))
 	typLenD := mergeDataTypeAndLenDataLen(1, byte(lenD))
 	result := []byte{byte(pos), typLenD}
 	result = append(result, dataLenBytes...)
@@ -523,7 +570,7 @@ func UnpackBool(b []byte, atByte int) (bool, int) {
 }
 
 func PackObject(data []byte, pos int) []byte {
-	lenD, dataLenBytes := SplitUint32(uint32(len(data)))
+	lenD, dataLenBytes := SplitUint32(uint32Length(len(data)))
 	typLenD := mergeDataTypeAndLenDataLen(9, byte(lenD))
 	result := []byte{byte(pos), typLenD}
 	result = append(result, dataLenBytes...)
@@ -540,7 +587,7 @@ func UnpackObject(b []byte, atByte int, lenD int) ([]byte, int) {
 
 func PackEnum(s string, pos int) []byte {
 	data := []byte(s)
-	lenD, dataLenBytes := SplitUint32(uint32(len(data)))
+	lenD, dataLenBytes := SplitUint32(uint32Length(len(data)))
 	typLenD := mergeDataTypeAndLenDataLen(10, byte(lenD))
 	result := []byte{byte(pos), typLenD}
 	result = append(result, dataLenBytes...)
@@ -556,7 +603,7 @@ func UnpackEnum(b []byte, atByte int, lenD int) (string, int) {
 }
 
 func PackBytes(s []byte, pos int) []byte {
-	lenD, dataLenBytes := SplitUint32(uint32(len(s)))
+	lenD, dataLenBytes := SplitUint32(uint32Length(len(s)))
 	typLenD := mergeDataTypeAndLenDataLen(11, byte(lenD))
 	result := []byte{byte(pos), typLenD}
 	result = append(result, dataLenBytes...)

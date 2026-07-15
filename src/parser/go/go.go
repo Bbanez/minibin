@@ -19,7 +19,38 @@ func validGoIdentifier(name string) bool {
 			return false
 		}
 	}
-	return true
+	_, keyword := map[string]struct{}{
+		"break":       {},
+		"default":     {},
+		"func":        {},
+		"interface":   {},
+		"select":      {},
+		"case":        {},
+		"defer":       {},
+		"go":          {},
+		"map":         {},
+		"struct":      {},
+		"chan":        {},
+		"else":        {},
+		"goto":        {},
+		"package":     {},
+		"switch":      {},
+		"const":       {},
+		"fallthrough": {},
+		"if":          {},
+		"range":       {},
+		"type":        {},
+		"continue":    {},
+		"for":         {},
+		"import":      {},
+		"return":      {},
+		"var":         {},
+	}[name]
+	return !keyword
+}
+
+func validSchemaText(value string) bool {
+	return !strings.ContainsAny(value, "\r\n`")
 }
 
 func goRefType(ref *string, path string) string {
@@ -83,7 +114,7 @@ func parseEnum(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 	)
 	fromStrFn := fmt.Sprintf(
 		"\n"+
-			"func %sFromStr(v string) %s {\n"+
+			"func %sFromStr(v string) (%s, error) {\n"+
 			"    switch v {\n",
 		sch.PascalName, sch.PascalName,
 	)
@@ -112,7 +143,7 @@ func parseEnum(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 		}
 		cont += fmt.Sprintf("    %s$name%s = %s\n", enum.GoName, sch.PascalName, goString(value))
 		toStrFn += fmt.Sprintf("    case %s:\n        return %s\n", enum.GoName, goString(value))
-		fromStrFn += fmt.Sprintf("    case %s:\n        return %s\n", goString(value), enum.GoName)
+		fromStrFn += fmt.Sprintf("    case %s:\n        return %s, nil\n", goString(value), enum.GoName)
 	}
 	toOpenApi += "" +
 		"        },\n" +
@@ -121,7 +152,7 @@ func parseEnum(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 	cont += ")\n\n"
 	toStrFn += "    default:\n        panic(fmt.Errorf(\"Invalid " + sch.PascalName + ": %s\", o))\n"
 	toStrFn += "    }\n}\n"
-	fromStrFn += "    default:\n        panic(fmt.Errorf(\"Invalid " + sch.PascalName + ": %s\", v))\n"
+	fromStrFn += "    default:\n        return \"\", fmt.Errorf(\"invalid " + sch.PascalName + ": %s\", v)\n"
 	fromStrFn += "    }\n}\n"
 	for i := range sch.Enums {
 		enum := sch.Enums[i]
@@ -149,6 +180,7 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 		panic(fmt.Errorf("Go minibin supports at most 256 properties per object: %s has %d", sch.RPath, len(sch.Props)))
 	}
 	output := p.ParserOutputItem{}
+	goNames := make(map[string]struct{}, len(sch.Props))
 	oStruct := "type " + sch.PascalName + " struct {\n"
 	fns := ""
 	toJsonFn := fmt.Sprintf("\nfunc (o *%s) ToJson() string {\n    result := []string{}\n", sch.PascalName)
@@ -259,9 +291,8 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			return fmt.Sprintf(""+
 				"    for i := range o.%s {\n"+
 				"        item := o.%s[i]\n"+
-				"        if item != nil {\n"+
-				"            result = append(result, %s(%sitem%s, %d)...)\n"+
-				"        }\n"+
+				"        if item == nil { panic(\"nil array element cannot be encoded\") }\n"+
+				"        result = append(result, %s(%sitem%s, %d)...)\n"+
 				"    }\n",
 				propName, propName, name, ptr, callFn, pos,
 			)
@@ -311,9 +342,9 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 		switch prop.Typ {
 		case "string":
 			reqArrStr = fmt.Sprintf("strings.Join(quoteStrings(o.%s), \",\")", prop.GoName)
-			reqStr = "strconv.Quote(o." + prop.GoName + ")"
+			reqStr = "jsonQuote(o." + prop.GoName + ")"
 			optArrStr = fmt.Sprintf("strings.Join(quoteStringPointers(o.%s), \",\")", prop.GoName)
-			optStr = "strconv.Quote(*o." + prop.GoName + ")"
+			optStr = "jsonQuote(*o." + prop.GoName + ")"
 		case "i32":
 			reqArrStr = fmt.Sprintf("\" + strings.Join(int32SliceToStringSlice(o.%s), \",\") + \"", prop.GoName)
 			reqStr = fmt.Sprintf("strconv.FormatInt(int64(o.%s), 10)", prop.GoName)
@@ -393,12 +424,12 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 				"strings.Join(enumSliceToJSONStringSlice(o.%s), \",\")",
 				prop.GoName,
 			)
-			reqStr = fmt.Sprintf("strconv.Quote(o.%s.ToStr())", prop.GoName)
+			reqStr = fmt.Sprintf("jsonQuote(o.%s.ToStr())", prop.GoName)
 			optArrStr = fmt.Sprintf(""+
 				"strings.Join(enumSliceToJSONStringSlice(o.%s), \",\")",
 				prop.GoName,
 			)
-			optStr = fmt.Sprintf("strconv.Quote((*o.%s).ToStr())", prop.GoName)
+			optStr = fmt.Sprintf("jsonQuote((*o.%s).ToStr())", prop.GoName)
 		case "object":
 			reqArrStr = fmt.Sprintf(""+
 				"\" + strings.Join(objSliceToStringSlice(o.%s), \",\") + \"",
@@ -472,6 +503,16 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 		prop := sch.Props[i]
 		if !validGoIdentifier(prop.GoName) {
 			panic(fmt.Errorf("invalid Go property name %q in %s.props[%d]", prop.Name, sch.RPath, i))
+		}
+		if !validGoIdentifier(prop.Name) {
+			panic(fmt.Errorf("invalid Go constructor parameter %q in %s.props[%d]", prop.Name, sch.RPath, i))
+		}
+		if _, exists := goNames[prop.GoName]; exists {
+			panic(fmt.Errorf("duplicate Go property name %q in %s", prop.GoName, sch.RPath))
+		}
+		goNames[prop.GoName] = struct{}{}
+		if !validSchemaText(prop.Desc) || (prop.BsonName != nil && (!validSchemaText(*prop.BsonName) || strings.ContainsAny(*prop.BsonName, "\\\""))) {
+			panic(fmt.Errorf("invalid description or BSON name in %s.props[%d]", sch.RPath, i))
 		}
 		typ := ""
 		switch prop.Typ {
@@ -673,9 +714,11 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 						"    case %d:\n"+
 						"        d, ok := v.(string)\n"+
 						"        if !ok { return fmt.Errorf(\"invalid datatype for %%s\", level) }\n"+
-						"        o.%s = append(o.%s, %sFromStr(d))\n"+
+						"        enum, err := %sFromStr(d)\n"+
+						"        if err != nil { return err }\n"+
+						"        o.%s = append(o.%s, enum)\n"+
 						"",
-					i, prop.GoName, prop.GoName, typ,
+					i, typ, prop.GoName, prop.GoName,
 				)
 			} else {
 				setPropFn += fmt.Sprintf(
@@ -683,9 +726,11 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 						"    case %d:\n"+
 						"        d, ok := v.(string)\n"+
 						"        if !ok { return fmt.Errorf(\"invalid datatype for %%s\", level) }\n"+
-						"        o.%s = %sFromStr(d)\n"+
+						"        enum, err := %sFromStr(d)\n"+
+						"        if err != nil { return err }\n"+
+						"        o.%s = enum\n"+
 						"",
-					i, prop.GoName, typ,
+					i, typ, prop.GoName,
 				)
 			}
 		case "object":

@@ -160,13 +160,21 @@ func TestAllTypesDocumentRejectsMismatchedWireType(t *testing.T) {
 }
 
 func TestAllTypesDocumentToJsonEscapesStrings(t *testing.T) {
-	document := &m.AllTypesDocument{Id: "quote: \" and newline: \n", State: m.LIFECYCLE_DRAFT}
+	document := &m.AllTypesDocument{Id: "quote: \" and control: \x01", State: m.LIFECYCLE_DRAFT}
 	var decoded map[string]any
 	if err := json.Unmarshal([]byte(document.ToJson()), &decoded); err != nil {
 		t.Fatalf("ToJson returned invalid JSON: %v", err)
 	}
 	if decoded["id"] != document.Id {
 		t.Fatalf("JSON value mismatch: %#v", decoded)
+	}
+}
+
+func TestAllTypesDocumentRejectsUnknownEnumValue(t *testing.T) {
+	// Field 32 is State; enum values use wire tag 10.
+	payload := []byte{32, 0xA0, 7, 'm', 'i', 's', 's', 'i', 'n', 'g'}
+	if _, err := m.UnpackAllTypesDocument(payload, nil); err == nil {
+		t.Fatal("expected unknown enum value to fail")
 	}
 }
 
