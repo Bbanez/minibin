@@ -158,6 +158,15 @@ func bytesToStringSlice(items []byte) []string {
     }
     return strs
 }
+
+func cloneBytes(items []byte) []byte {
+	if items == nil {
+		return nil
+	}
+	output := make([]byte, len(items))
+	copy(output, items)
+	return output
+}
 func bytesToStringSliceRef(items *[]byte) []string {
 	if items == nil {
 		return []string{}
@@ -230,6 +239,15 @@ type UnpackabeEntry interface {
 }
 
 func Unpack[T UnpackabeEntry](o T, b []byte, level string) error {
+	return unpack(o, b, level, 0)
+}
+
+const maxUnpackDepth = 64
+
+func unpack[T UnpackabeEntry](o T, b []byte, level string, depth int) error {
+	if depth > maxUnpackDepth {
+		return fmt.Errorf("maximum nesting depth exceeded at %s", level)
+	}
 	bytes, err := Decompress(b)
 	if err != nil {
 		return err
@@ -549,7 +567,7 @@ func UnpackBytes(b []byte, atByte int, lenD int) ([]byte, int) {
 	lenD++
 	dataLen := int(mergeUint32(lenD, b[atByte:atByte+lenD]))
 	atByte += lenD
-	dataBytes := b[atByte : atByte+dataLen]
+	dataBytes := cloneBytes(b[atByte : atByte+dataLen])
 	return dataBytes, atByte + dataLen
 }
 

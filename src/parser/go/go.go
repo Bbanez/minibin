@@ -33,6 +33,15 @@ func goRefType(ref *string, path string) string {
 	return parts[1]
 }
 
+func goString(value string) string {
+	return fmt.Sprintf("%q", value)
+}
+
+func goTagValue(value string) string {
+	quoted := goString(value)
+	return quoted[1 : len(quoted)-1]
+}
+
 func Parse(schemas []*schema.Schema, args *utils.Args) []*p.ParserOutputItem {
 	outputItems := []*p.ParserOutputItem{
 		{
@@ -97,25 +106,13 @@ func parseEnum(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 		} else {
 			value = enum.Name
 		}
-		toOpenApi += fmt.Sprintf(
-			"            \"%s\",\n",
-			value,
-		)
+		toOpenApi += fmt.Sprintf("            %s,\n", goString(value))
 		if len(enum.GoName) > longestNameLen {
 			longestNameLen = len(enum.GoName)
 		}
-		cont += fmt.Sprintf(
-			"    %s$name%s = \"%s\"\n",
-			enum.GoName, sch.PascalName, value,
-		)
-		toStrFn += fmt.Sprintf(
-			"    case %s:\n        return \"%s\"\n",
-			enum.GoName, value,
-		)
-		fromStrFn += fmt.Sprintf(
-			"    case \"%s\":\n        return %s\n",
-			value, enum.GoName,
-		)
+		cont += fmt.Sprintf("    %s$name%s = %s\n", enum.GoName, sch.PascalName, goString(value))
+		toStrFn += fmt.Sprintf("    case %s:\n        return %s\n", enum.GoName, goString(value))
+		fromStrFn += fmt.Sprintf("    case %s:\n        return %s\n", goString(value), enum.GoName)
 	}
 	toOpenApi += "" +
 		"        },\n" +
@@ -306,6 +303,7 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 
 	importStrconv := true
 	toJsonWrapper := func(prop *schema.SchemaProp) {
+		jsonKey := goString("\"" + prop.Name + "\":")
 		var reqArrStr string
 		var reqStr string
 		var optArrStr string
@@ -428,17 +426,17 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			if prop.Array {
 				toJsonFn += fmt.Sprintf(""+
 					"    if len(o.%s) > 0 {\n"+
-					"        result = append(result, \"\\\"%s\\\":[%s]\")\n"+
+					"        result = append(result, %s + \"[\" + %s + \"]\")\n"+
 					"    } else {\n"+
-					"        result = append(result, \"\\\"%s\\\":[]\")\n"+
+					"        result = append(result, %s + \"[]\")\n"+
 					"    }\n"+
 					"",
-					prop.GoName, prop.Name, reqArrStr, prop.Name,
+					prop.GoName, jsonKey, reqArrStr, jsonKey,
 				)
 			} else {
 				toJsonFn += fmt.Sprintf(""+
-					"    result = append(result, \"\\\"%s\\\":\" + %s)\n",
-					prop.Name, reqStr,
+					"    result = append(result, %s + %s)\n",
+					jsonKey, reqStr,
 				)
 			}
 		} else {
@@ -450,17 +448,17 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			if prop.Array {
 				toJsonFn += fmt.Sprintf(""+
 					"        if len(o.%s) > 0 {\n"+
-					"            result = append(result, \"\\\"%s\\\":[%s]\")\n"+
+					"            result = append(result, %s + \"[\" + %s + \"]\")\n"+
 					"        } else {\n"+
-					"            result = append(result, \"\\\"%s\\\":[]\")\n"+
+					"            result = append(result, %s + \"[]\")\n"+
 					"        }\n"+
 					"",
-					prop.GoName, prop.Name, optArrStr, prop.Name,
+					prop.GoName, jsonKey, optArrStr, jsonKey,
 				)
 			} else {
 				toJsonFn += fmt.Sprintf(""+
-					"        result = append(result, \"\\\"%s\\\":\" + %s)\n",
-					prop.Name, optStr,
+					"        result = append(result, %s + %s)\n",
+					jsonKey, optStr,
 				)
 			}
 			toJsonFn += "    }\n"
@@ -754,6 +752,17 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			}
 		case "bytes":
 			typ = "[]byte"
+			if prop.Array {
+				if prop.Required {
+					copyFn += fmt.Sprintf("    output.%s = make([][]byte, len(o.%s))\n    for i, item := range o.%s { output.%s[i] = cloneBytes(item) }\n", prop.GoName, prop.GoName, prop.GoName, prop.GoName)
+				} else {
+					copyFn += fmt.Sprintf("    output.%s = make([]*[]byte, len(o.%s))\n    for i, item := range o.%s { if item != nil { itemCopy := cloneBytes(*item); output.%s[i] = &itemCopy } }\n", prop.GoName, prop.GoName, prop.GoName, prop.GoName)
+				}
+			} else if prop.Required {
+				copyFn += fmt.Sprintf("    output.%s = cloneBytes(o.%s)\n", prop.GoName, prop.GoName)
+			} else {
+				copyFn += fmt.Sprintf("    if o.%s != nil { itemCopy := cloneBytes(*o.%s); output.%s = &itemCopy }\n", prop.GoName, prop.GoName, prop.GoName)
+			}
 			if prop.Required {
 				packFn += packWrapperRequired("PackBytes", prop.GoName, i, prop.Array, "")
 			} else {
@@ -770,9 +779,9 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 		getPropNameFn += fmt.Sprintf(
 			""+
 				"    case %d:\n"+
-				"        return \"%s\"\n"+
+				"        return %s\n"+
 				"",
-			i, prop.Name,
+			i, goString(prop.Name),
 		)
 		if !prop.Required || (prop.Array && prop.Typ == "object") {
 			typ = "*" + typ
@@ -805,7 +814,7 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 		}
 		oStruct += fmt.Sprintf(
 			"%s%s$name%s$type`json:\"%s,omitempty\"%s%s`\n",
-			desc, prop.GoName, typ, prop.Name, bson, requiredTag,
+			desc, prop.GoName, typ, goTagValue(prop.Name), bson, requiredTag,
 		)
 		fns += fmt.Sprintf(
 			"func (o *%s) Get%s() %s {\n    return o.%s\n}\n",
@@ -832,6 +841,8 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 	toJsonFn += "    return \"{\" + strings.Join(result, \",\") + \"}\"\n}\n"
 	setPropFn += fmt.Sprintf(
 		"" +
+			"    default:\n" +
+			"        return fmt.Errorf(\"unknown property position %%d for %%s\", pos, level)\n" +
 			"    }\n" +
 			"    return nil\n" +
 			"}\n",
@@ -860,7 +871,7 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			"        level = &l"+
 			"    }\n"+
 			"    result := %s{}\n"+
-			"    err := Unpack(&result, b, *level)\n"+
+			"    err := unpack(&result, b, *level, strings.Count(*level, \".\"))\n"+
 			"    if err != nil {\n"+
 			"       return nil, err\n"+
 			"    }\n"+

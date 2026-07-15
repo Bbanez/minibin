@@ -3,6 +3,7 @@ package parser_go
 const GoOpenApiModel = "package minibin\n\n" +
 	"\n" +
 	"type OpenApiObjectSchema struct {\n" +
+	"\tFormat     *string                         `json:\"format,omitempty\"`\n" +
 	"	Type       *string                         `json:\"type,omitempty\"`\n" +
 	"	Enum       *[]string                       `json:\"enum,omitempty\"`\n" +
 	"	Ref        *string                         `json:\"$ref,omitempty\"`\n" +
@@ -144,16 +145,23 @@ func StructToOpenApiSchema(obj any) (string, OpenApiObjectSchema) {
 	outputType := "object"
 	outputProps := make(map[string]OpenApiObjectSchema)
 	typ := reflect.TypeOf(obj)
-	val := reflect.ValueOf(obj)
 	for typ.Kind() == reflect.Pointer {
 		typ = typ.Elem()
-		val = val.Elem()
 	}
 	requiredPropNames := []string{}
-	for i := 0; i < val.NumField(); i++ {
+	for i := 0; i < typ.NumField(); i++ {
 		key := typ.Field(i).Name
-		field := val.Field(i)
-		valueType := field.Type()
+		fieldType := typ.Field(i).Type
+		if fieldType.Kind() == reflect.Slice && fieldType.Elem().Kind() == reflect.Uint8 {
+			propType := "string"
+			format := "byte"
+			outputProps[toCamelCase(key)] = OpenApiObjectSchema{Type: &propType, Format: &format}
+			if typ.Field(i).Tag.Get("minibin") == "required" {
+				requiredPropNames = append(requiredPropNames, toCamelCase(key))
+			}
+			continue
+		}
+		valueType := fieldType
 		for valueType.Kind() == reflect.Pointer || valueType.Kind() == reflect.Slice {
 			valueType = valueType.Elem()
 		}
@@ -171,7 +179,7 @@ func StructToOpenApiSchema(obj any) (string, OpenApiObjectSchema) {
 		}
 		if slices.Contains(primitiveTypes[:], valueTypeName) {
 			propType := fmt.Sprintf("%s", valueType)
-			isArr := field.Type().Kind() == reflect.Slice
+			isArr := fieldType.Kind() == reflect.Slice
 			propType = strings.ReplaceAll(propType, "[]", "")
 			propType = strings.ReplaceAll(propType, "*", "")
 			if strings.Contains(propType, "int") || strings.Contains(propType, "float") {
@@ -194,7 +202,7 @@ func StructToOpenApiSchema(obj any) (string, OpenApiObjectSchema) {
 			}
 		} else {
 			propType := fmt.Sprintf("%s", valueType)
-			isArr := field.Type().Kind() == reflect.Slice
+			isArr := fieldType.Kind() == reflect.Slice
 			parts := strings.Split(propType, ".")
 			propType = parts[len(parts)-1]
 			propType = strings.ReplaceAll(propType, "[]", "")
@@ -218,7 +226,7 @@ func StructToOpenApiSchema(obj any) (string, OpenApiObjectSchema) {
 			requiredPropNames = append(requiredPropNames, camelKey)
 		}
 	}
-	return reflect.TypeOf(obj).Name(), OpenApiObjectSchema{
+	return typ.Name(), OpenApiObjectSchema{
 		Type:       &outputType,
 		Required:   &requiredPropNames,
 		Properties: &outputProps,
