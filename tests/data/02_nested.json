@@ -1,0 +1,72 @@
+[
+    {
+        "name": "Coordinate",
+        "props": [
+            {
+                "name": "latitude",
+                "typ": "f64",
+                "decimals": 7,
+                "required": true
+            },
+            {
+                "name": "longitude",
+                "typ": "f64",
+                "decimals": 7,
+                "required": true
+            },
+            {
+                "name": "altitudeMeters",
+                "typ": "f32",
+                "decimals": 2,
+                "required": false
+            }
+        ]
+    },
+    {
+        "name": "Attachment",
+        "props": [
+            { "name": "fileName", "typ": "string", "required": true },
+            { "name": "content", "typ": "bytes", "required": true },
+            { "name": "checksum", "typ": "bytes", "required": false },
+            {
+                "name": "labels",
+                "typ": "string",
+                "array": true,
+                "required": false
+            },
+            { "name": "sizes", "typ": "u64", "array": true, "required": true }
+        ]
+    },
+    {
+        "name": "AuditEntry",
+        "props": [
+            { "name": "sequence", "typ": "u64", "required": true },
+            { "name": "actorId", "typ": "i64", "required": true },
+            { "name": "message", "typ": "string", "required": true },
+            {
+                "name": "previousState",
+                "typ": "enum",
+                "ref": "01_enums.Lifecycle",
+                "required": true
+            },
+            {
+                "name": "nextState",
+                "typ": "enum",
+                "ref": "01_enums.Lifecycle",
+                "required": true
+            },
+            {
+                "name": "changedFields",
+                "typ": "string",
+                "array": true,
+                "required": true
+            },
+            {
+                "name": "location",
+                "typ": "object",
+                "ref": "02_nested.Coordinate",
+                "required": false
+            }
+        ]
+    }
+]

@@ -1,0 +1,20 @@
+[
+    {
+        "name": "Lifecycle",
+        "enums": [
+            { "name": "draft" },
+            { "name": "inReview", "value": "in_review" },
+            { "name": "published", "value": "published" },
+            { "name": "archived", "value": "archived" }
+        ]
+    },
+    {
+        "name": "Priority",
+        "enums": [
+            { "name": "low", "value": "low" },
+            { "name": "normal", "value": "normal" },
+            { "name": "high", "value": "high" },
+            { "name": "critical", "value": "critical" }
+        ]
+    }
+]

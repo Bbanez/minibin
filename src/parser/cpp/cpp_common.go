@@ -12,7 +12,6 @@ public:
 
 	std::string getPropNameAtPos(uint8_t pos);
     std::vector<uint8_t> pack();
-	std::string print(int indent = 4);
 };
 @name unpack@name(const std::vector<uint8_t>& b, std::string level = "@name");`
 
@@ -49,11 +48,6 @@ std::vector<uint8_t> @name::pack() {
 @unpackProps
     }
 	return result;
-}
-std::string @name::print(int indent) {
-	std::string indentStr(indent, ' ');
-@printPrep
-	return std::string("@name {\n") + @printStr + "\n" + indentStr + "}";
 }`
 
 var HEnum = `

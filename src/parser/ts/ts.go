@@ -318,11 +318,19 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 		case "bytes":
 			tsTyp = "number[]"
 			emptryValue = "[]"
-			packStr = fmt.Sprintf(
-				""+
-					"    Minibin.packBytes(buf, this.%s, %d);\n",
-				prop.Name, i,
-			)
+			if prop.Array {
+				packStr = fmt.Sprintf(
+					""+
+						"    Minibin.packBytes(buf, this.%s[i], %d);\n",
+					prop.Name, i,
+				)
+			} else {
+				packStr = fmt.Sprintf(
+					""+
+						"    Minibin.packBytes(buf, this.%s, %d);\n",
+					prop.Name, i,
+				)
+			}
 		}
 		if prop.Typ != "object" {
 			if prop.Array {

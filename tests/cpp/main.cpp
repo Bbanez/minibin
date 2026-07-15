@@ -1,39 +1,108 @@
+#include <cassert>
 #include <cstdint>
-#include <cstdio>
 #include <string>
+#include <vector>
 
-#include "minibin.hpp"
-int main() {
-    printf("Hello, World!\n");
-    // ObjS objS = ObjS(3000000000001);
-    // printf("%s\n", objS.print().c_str());
-    // std::vector<uint8_t> packedS = objS.pack();
-    // printf("Packed data size: %zu bytes\n", packedS.size());
-    // for (size_t i = 0; i < packedS.size(); i++) {
-    //     printf("%02X ", packedS[i]);
-    // }
-    // printf("\n");
-    // ObjS unpackedObjS = unpackObjS(packedS);
-    // printf("%s\n", unpackedObjS.print().c_str());
-    // printf("value1: %ld == value2: %ld = %d\n", objS.value,
-    //        unpackedObjS.value, objS.value == unpackedObjS.value);
+#include "../dist/cpp/minibin.hpp"
 
-    Obj1 obj1 = Obj1(
-        "Hello, World!", std::vector<std::string>{"Hello", "World"},
-        new int32_t(12345), std::vector<int32_t>{1, 2, 3}, 123456789012345,
-        std::vector<int64_t>{123456789012345, 123456789012346}, 1234567890,
-        std::vector<uint32_t>{1234567890, 1234567891}, 12345678901234567890ULL,
-        std::vector<uint64_t>{12345678901234567890ULL, 12345678901234567891ULL},
-        3.14f, std::vector<float>{3.14f, 2.71f}, 3.141592653589793,
-        std::vector<double>{3.141592653589793, 2.718281828459045}, true,
-        std::vector<bool>{true, false, true}, Obj2("Nested Object", 42),
-        std::vector<Obj2>{Obj2("Nested Object 1", 42),
-                          Obj2("Nested Object 2", 43)},
-        Enum1::E1, std::vector<Enum1>{Enum1::E2, Enum1::E3});
-    printf("%s\n", obj1.print().c_str());
-    std::vector<uint8_t> packed = obj1.pack();
-    printf("Packed data size: %zu bytes\n", packed.size());
-    Obj1 unpackedObj1 = unpackObj1(packed);
-    printf("%s\n", unpackedObj1.print().c_str());
+void testRoundTrip() {
+    Coordinate origin;
+    origin.latitude = 0;
+    origin.longitude = 0;
+
+    Attachment attachment;
+    attachment.fileName = "report.bin";
+    attachment.content = {1, 2, 3};
+    attachment.sizes = {3, 1024};
+
+    AllTypesDocument document;
+    document.id = "document-001";
+    document.aliases = {"primary", "backup"};
+    document.minimumI32 = INT32_MIN;
+    document.i32Values = {-1, 0, 1};
+    document.minimumI64 = INT64_MIN;
+    document.i64Values = {-9000000000LL, 0, 9000000000LL};
+    document.maximumU32 = UINT32_MAX;
+    document.u32Values = {0, 1, UINT32_MAX};
+    document.maximumU64 = UINT64_MAX;
+    document.u64Values = {0, 1, UINT64_MAX};
+    document.price = -123.45f;
+    document.f32Values = {-2.5f, 0.0f, 3.125f};
+    document.measurement = -987654.123456789;
+    document.f64Values = {-1.234567, 0.0, 9.876543};
+    document.enabled = true;
+    document.flags = {true, false, true};
+    document.state = Lifecycle::in_review;
+    document.priorities = {Priority::low, Priority::critical};
+    document.payload = {0, 1, 127, 128, 255};
+    document.chunks = {{1}, {2, 3, 4}};
+    document.origin = origin;
+    document.attachments = {attachment};
+
+    AllTypesDocument unpacked = unpackAllTypesDocument(document.pack());
+    assert(unpacked.id == document.id);
+    assert(unpacked.minimumI32 == document.minimumI32);
+    assert(unpacked.minimumI64 == document.minimumI64);
+    assert(unpacked.maximumU32 == document.maximumU32);
+    assert(unpacked.maximumU64 == document.maximumU64);
+    assert(unpacked.i32Values == document.i32Values);
+    assert(unpacked.i64Values == document.i64Values);
+    assert(unpacked.u32Values == document.u32Values);
+    assert(unpacked.u64Values == document.u64Values);
+    assert(unpacked.payload == document.payload);
+    assert(unpacked.chunks == document.chunks);
+    assert(unpacked.state == document.state);
+    assert(unpacked.priorities == document.priorities);
+    assert(unpacked.attachments.size() == 1);
+    assert(unpacked.attachments[0].content == attachment.content);
+
+}
+
+void testMutationAndPropertyLookup() {
+    AllTypesDocument document;
+    document.id = "document-001";
+    document.aliases = {"primary"};
+    document.i32Values = {1};
+    document.i64Values = {2};
+    document.u32Values = {3};
+    document.u64Values = {4};
+    document.f32Values = {1.5f};
+    document.f64Values = {2.5};
+    document.flags = {true};
+    document.priorities = {Priority::low};
+    document.chunks = {{1}};
+    Attachment attachment;
+    attachment.fileName = "before.bin";
+    attachment.content = {1};
+    attachment.sizes = {1};
+    document.attachments = {attachment};
+
+    document.id = "mutated-document";
+    document.enabled = false;
+    document.flags = {false, true};
+    document.state = Lifecycle::archived;
+    document.payload = {9, 8, 7};
+    document.origin.latitude = 7;
+    document.attachments[0].content = {4, 5, 6};
+
+    assert(document.getPropNameAtPos(0) == "id");
+    assert(document.getPropNameAtPos(34) == "payload");
+    assert(document.getPropNameAtPos(255) == "__unknown__[255]");
+
+    AllTypesDocument mutated = unpackAllTypesDocument(document.pack());
+    assert(mutated.id == "mutated-document");
+    assert(!mutated.enabled);
+    assert(mutated.flags == std::vector<bool>({false, true}));
+    assert(mutated.state == Lifecycle::archived);
+    assert(mutated.payload == std::vector<uint8_t>({9, 8, 7}));
+    assert(mutated.origin.latitude == 7);
+    assert(mutated.attachments[0].content == std::vector<uint8_t>({4, 5, 6}));
+
+}
+
+int main(int argc, char* argv[]) {
+    const std::string test = argc > 1 ? argv[1] : "all";
+    if (test == "round-trip" || test == "all") testRoundTrip();
+    if (test == "mutation" || test == "all") testMutationAndPropertyLookup();
     return 0;
 }

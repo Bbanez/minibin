@@ -249,7 +249,7 @@ export class Minibin {
     }
 
     static packFloat32(buffer: number[], fnum: number, pos: number, decimals: number): void {
-        let num = fnum * decimals
+        let num = Math.round(fnum * decimals)
         let neg = 0;
         if (num < 0) {
             neg = 1;
@@ -261,7 +261,7 @@ export class Minibin {
     }
 
     static packFloat64(buffer: number[], fnum: number, pos: number, decimals: number): void {
-        let num = BigInt(fnum * decimals)
+        let num = BigInt(Math.round(fnum * decimals))
         let neg = 0;
         if (num < 0) {
             neg = 1;

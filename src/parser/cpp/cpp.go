@@ -804,16 +804,21 @@ func parseObject(sch *schema.Schema) (hClassFile, cppClassFile) {
 			aPrintStr = append(aPrintStr, fmt.Sprintf("indentStr + \"%s: \" + %sStr", prop.Name, prop.Name))
 		case "bytes":
 			typ = "std::vector<uint8_t>"
+			val = "std::vector<uint8_t>()"
+			ptrDeref := ""
+			if !prop.Required {
+				ptrDeref = "*"
+			}
 			aPackProp = fmt.Sprintf(
 				""+
-					"    std::vector<uint8_t> %sBytes = _packBytes(this->%s, %d);\n"+
+					"    std::vector<uint8_t> %sBytes = _packBytes(%sthis->%s, %d);\n"+
 					"    result.insert(result.end(), %sBytes.begin(), %sBytes.end());",
-				prop.Name, prop.Name, i, prop.Name, prop.Name,
+				prop.Name, ptrDeref, prop.Name, i, prop.Name, prop.Name,
 			)
-			assignVal := fmt.Sprintf(
-				"result.%s = v",
-				prop.Name,
-			)
+			assignVal := fmt.Sprintf("result.%s = v", prop.Name)
+			if !prop.Required {
+				assignVal = fmt.Sprintf("result.%s = new std::vector<uint8_t>(v)", prop.Name)
+			}
 			if prop.Array {
 				assignVal = fmt.Sprintf(
 					"result.%s.push_back(v)",
@@ -840,19 +845,9 @@ func parseObject(sch *schema.Schema) (hClassFile, cppClassFile) {
 					prop.Name, prop.Name, prop.Name, prop.Name, prop.Name, prop.Name,
 				))
 			} else {
-				if prop.Required {
-					aPrintPrep = append(aPrintPrep, fmt.Sprintf(
-						""+
-							"    std::string %sStr = std::to_string(this->%s);",
-						prop.Name, prop.Name,
-					))
-				} else {
-					aPrintPrep = append(aPrintPrep, fmt.Sprintf(
-						""+
-							"    std::string %sStr = this->%s != nullptr ? std::to_string(*this->%s) : \"null\";",
-						prop.Name, prop.Name, prop.Name,
-					))
-				}
+				aPrintPrep = append(aPrintPrep, fmt.Sprintf(
+					"    std::string %sStr = \"<bytes>\";", prop.Name,
+				))
 			}
 			aPrintStr = append(aPrintStr, fmt.Sprintf("indentStr + \"%s: \" + %sStr", prop.Name, prop.Name))
 		}
@@ -882,6 +877,8 @@ func parseObject(sch *schema.Schema) (hClassFile, cppClassFile) {
 			if prop.Array {
 				tmp := strings.ReplaceAll(aPackProp,
 					"this->"+prop.Name+"[i]", "this->"+prop.Name+"->at(i)")
+				tmp = strings.ReplaceAll(tmp,
+					"*this->"+prop.Name+"->at(i)", "this->"+prop.Name+"->at(i)")
 				tmp = strings.ReplaceAll(tmp,
 					"this->"+prop.Name+".size", "this->"+prop.Name+"->size")
 				aPackProp = fmt.Sprintf(

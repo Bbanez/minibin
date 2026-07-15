@@ -3,7 +3,8 @@
     "module": "index.ts",
     "type": "module",
     "scripts": {
-        "node:test": "ts-node tests/ts/node_pack_unpack_test.ts"
+        "node:test": "ts-node tests/ts/node_pack_unpack_test.ts",
+        "test:all": "bun _scripts/test-all.ts"
     },
     "devDependencies": {
         "@types/bun": "latest",

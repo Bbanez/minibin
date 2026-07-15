@@ -1,0 +1,212 @@
+[
+    {
+        "name": "AllTypesDocument",
+        "props": [
+            {
+                "name": "id",
+                "typ": "string",
+                "required": true,
+                "desc": "A non-empty document identifier.",
+                "bsonName": "_id"
+            },
+            { "name": "title", "typ": "string", "required": false },
+            {
+                "name": "aliases",
+                "typ": "string",
+                "array": true,
+                "required": true
+            },
+            {
+                "name": "optionalAliases",
+                "typ": "string",
+                "array": true,
+                "required": false
+            },
+            { "name": "minimumI32", "typ": "i32", "required": true },
+            { "name": "optionalI32", "typ": "i32", "required": false },
+            {
+                "name": "i32Values",
+                "typ": "i32",
+                "array": true,
+                "required": true
+            },
+            {
+                "name": "optionalI32Values",
+                "typ": "i32",
+                "array": true,
+                "required": false
+            },
+            { "name": "minimumI64", "typ": "i64", "required": true },
+            { "name": "optionalI64", "typ": "i64", "required": false },
+            {
+                "name": "i64Values",
+                "typ": "i64",
+                "array": true,
+                "required": true
+            },
+            {
+                "name": "optionalI64Values",
+                "typ": "i64",
+                "array": true,
+                "required": false
+            },
+            { "name": "maximumU32", "typ": "u32", "required": true },
+            { "name": "optionalU32", "typ": "u32", "required": false },
+            {
+                "name": "u32Values",
+                "typ": "u32",
+                "array": true,
+                "required": true
+            },
+            {
+                "name": "optionalU32Values",
+                "typ": "u32",
+                "array": true,
+                "required": false
+            },
+            { "name": "maximumU64", "typ": "u64", "required": true },
+            { "name": "optionalU64", "typ": "u64", "required": false },
+            {
+                "name": "u64Values",
+                "typ": "u64",
+                "array": true,
+                "required": true
+            },
+            {
+                "name": "optionalU64Values",
+                "typ": "u64",
+                "array": true,
+                "required": false
+            },
+            { "name": "price", "typ": "f32", "decimals": 2, "required": true },
+            {
+                "name": "optionalRatio",
+                "typ": "f32",
+                "decimals": 5,
+                "required": false
+            },
+            {
+                "name": "f32Values",
+                "typ": "f32",
+                "decimals": 3,
+                "array": true,
+                "required": true
+            },
+            {
+                "name": "optionalF32Values",
+                "typ": "f32",
+                "decimals": 1,
+                "array": true,
+                "required": false
+            },
+            {
+                "name": "measurement",
+                "typ": "f64",
+                "decimals": 9,
+                "required": true
+            },
+            {
+                "name": "optionalMeasurement",
+                "typ": "f64",
+                "decimals": 4,
+                "required": false
+            },
+            {
+                "name": "f64Values",
+                "typ": "f64",
+                "decimals": 6,
+                "array": true,
+                "required": true
+            },
+            {
+                "name": "optionalF64Values",
+                "typ": "f64",
+                "decimals": 2,
+                "array": true,
+                "required": false
+            },
+            { "name": "enabled", "typ": "bool", "required": true },
+            { "name": "optionalEnabled", "typ": "bool", "required": false },
+            { "name": "flags", "typ": "bool", "array": true, "required": true },
+            {
+                "name": "optionalFlags",
+                "typ": "bool",
+                "array": true,
+                "required": false
+            },
+            {
+                "name": "state",
+                "typ": "enum",
+                "ref": "01_enums.Lifecycle",
+                "required": true
+            },
+            {
+                "name": "priorities",
+                "typ": "enum",
+                "ref": "01_enums.Priority",
+                "array": true,
+                "required": true
+            },
+            { "name": "payload", "typ": "bytes", "required": true },
+            { "name": "optionalPayload", "typ": "bytes", "required": false },
+            {
+                "name": "chunks",
+                "typ": "bytes",
+                "array": true,
+                "required": true
+            },
+            {
+                "name": "optionalChunks",
+                "typ": "bytes",
+                "array": true,
+                "required": false
+            },
+            {
+                "name": "origin",
+                "typ": "object",
+                "ref": "02_nested.Coordinate",
+                "required": true
+            },
+            {
+                "name": "optionalDestination",
+                "typ": "object",
+                "ref": "02_nested.Coordinate",
+                "required": false
+            },
+            {
+                "name": "attachments",
+                "typ": "object",
+                "ref": "02_nested.Attachment",
+                "array": true,
+                "required": true
+            },
+            {
+                "name": "optionalAuditTrail",
+                "typ": "object",
+                "ref": "02_nested.AuditEntry",
+                "array": true,
+                "required": false
+            }
+        ]
+    },
+    {
+        "name": "AllTypesDocumentBatch",
+        "props": [
+            { "name": "batchId", "typ": "string", "required": true },
+            {
+                "name": "documents",
+                "typ": "object",
+                "ref": "03_all_types.AllTypesDocument",
+                "array": true,
+                "required": true
+            },
+            {
+                "name": "failedDocuments",
+                "typ": "object",
+                "ref": "03_all_types.AllTypesDocument",
+                "array": true,
+                "required": false
+            }
+        ]
+    }
+]
