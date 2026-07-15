@@ -208,57 +208,114 @@ func Unpack[T UnpackabeEntry](o T, b []byte, level string) error {
 	}
 	atByte := 0
 	for atByte < len(bytes) {
+		if len(bytes)-atByte < 2 {
+			return fmt.Errorf("truncated entry header at byte %d", atByte)
+		}
 		pos := int(bytes[atByte])
 		atByte += 1
 		typ, lenD := unmergeDataTypeAndLenDataLen(bytes[atByte])
 		atByte += 1
 		propName := o.GetPropNameAtPos(pos)
 		lvl := level + "." + propName
+		length := lenD + 1
+		remaining := len(bytes) - atByte
 		switch typ {
 		case 0:
+			if atByte >= len(bytes) {
+				return fmt.Errorf("truncated data for %s", lvl)
+			}
 			atByte++
 			continue
 		case 1:
+			if length > 4 || length > remaining {
+				return fmt.Errorf("invalid or truncated length for %s", lvl)
+			}
+			dataLen := mergeUint32(length, bytes[atByte:atByte+length])
+			if uint64(dataLen) > uint64(remaining-length) {
+				return fmt.Errorf("truncated data for %s", lvl)
+			}
 			data, next := UnpackString(bytes, atByte, lenD)
 			atByte = next
 			o.SetPropAtPos(pos, data, lvl)
 		case 2:
+			if length > 4 || length+1 > remaining {
+				return fmt.Errorf("invalid or truncated data for %s", lvl)
+			}
 			data, next := UnpackInt32(bytes, atByte, lenD)
 			atByte = next
 			o.SetPropAtPos(pos, data, lvl)
 		case 3:
+			if length > 8 || length+1 > remaining {
+				return fmt.Errorf("invalid or truncated data for %s", lvl)
+			}
 			data, next := UnpackInt64(bytes, atByte, lenD)
 			atByte = next
 			o.SetPropAtPos(pos, data, lvl)
 		case 4:
+			if length > 4 || length > remaining {
+				return fmt.Errorf("invalid or truncated data for %s", lvl)
+			}
 			data, next := UnpackUint32(bytes, atByte, lenD)
 			atByte = next
 			o.SetPropAtPos(pos, data, lvl)
 		case 5:
+			if length > 8 || length > remaining {
+				return fmt.Errorf("invalid or truncated data for %s", lvl)
+			}
 			data, next := UnpackUint64(bytes, atByte, lenD)
 			atByte = next
 			o.SetPropAtPos(pos, data, lvl)
 		case 6:
+			if length > 4 || length+1 > remaining {
+				return fmt.Errorf("invalid or truncated data for %s", lvl)
+			}
 			data, next := UnpackInt32(bytes, atByte, lenD)
 			atByte = next
 			o.SetPropAtPos(pos, data, lvl)
 		case 7:
+			if length > 8 || length+1 > remaining {
+				return fmt.Errorf("invalid or truncated data for %s", lvl)
+			}
 			data, next := UnpackInt64(bytes, atByte, lenD)
 			atByte = next
 			o.SetPropAtPos(pos, data, lvl)
 		case 8:
+			if lenD != 0 || atByte >= len(bytes) {
+				return fmt.Errorf("invalid data length for %s", lvl)
+			}
 			data, next := UnpackBool(bytes, atByte)
 			atByte = next
 			o.SetPropAtPos(pos, data, lvl)
 		case 9:
+			if length > 4 || length > remaining {
+				return fmt.Errorf("invalid or truncated length for %s", lvl)
+			}
+			dataLen := mergeUint32(length, bytes[atByte:atByte+length])
+			if uint64(dataLen) > uint64(remaining-length) {
+				return fmt.Errorf("truncated data for %s", lvl)
+			}
 			data, next := UnpackObject(bytes, atByte, lenD)
 			atByte = next
 			o.SetPropAtPos(pos, data, lvl)
 		case 10:
+			if length > 4 || length > remaining {
+				return fmt.Errorf("invalid or truncated length for %s", lvl)
+			}
+			dataLen := mergeUint32(length, bytes[atByte:atByte+length])
+			if uint64(dataLen) > uint64(remaining-length) {
+				return fmt.Errorf("truncated data for %s", lvl)
+			}
 			data, next := UnpackString(bytes, atByte, lenD)
 			atByte = next
 			o.SetPropAtPos(pos, data, lvl)
 		case 11:
+			if length > 4 || length > remaining {
+				return fmt.Errorf("invalid or truncated length for %s", lvl)
+			}
+			dataLen := mergeUint32(length, bytes[atByte:atByte+length])
+			if uint64(dataLen) > uint64(remaining-length) {
+				return fmt.Errorf("truncated data for %s", lvl)
+			}
 			data, next := UnpackBytes(bytes, atByte, lenD)
 			atByte = next
 			o.SetPropAtPos(pos, data, lvl)

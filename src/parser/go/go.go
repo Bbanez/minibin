@@ -118,6 +118,9 @@ func parseEnum(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 }
 
 func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
+	if len(sch.Props) > 256 {
+		panic(fmt.Errorf("Go minibin supports at most 256 properties per object: %s has %d", sch.RPath, len(sch.Props)))
+	}
 	output := p.ParserOutputItem{}
 	oStruct := "type " + sch.PascalName + " struct {\n"
 	fns := ""

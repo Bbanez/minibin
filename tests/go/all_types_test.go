@@ -134,3 +134,19 @@ func TestAllTypesDocumentAccessorsMutationAndCopy(t *testing.T) {
 		t.Fatal("mutated values did not survive round trip")
 	}
 }
+
+func TestAllTypesDocumentRejectsMalformedPayloads(t *testing.T) {
+	testCases := [][]byte{
+		{0},                      // Missing type/length byte.
+		{0, 0x10},                // String missing its length byte.
+		{0, 0x10, 2, 'x'},        // String length exceeds remaining data.
+		{0, 0x28, 0, 0, 0, 0, 0}, // Int32 declares a nine-byte value.
+		{0, 0x80},                // Bool missing its value byte.
+	}
+
+	for _, payload := range testCases {
+		if _, err := m.UnpackAllTypesDocument(payload, nil); err == nil {
+			t.Fatalf("expected malformed payload %v to fail", payload)
+		}
+	}
+}
