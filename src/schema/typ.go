@@ -44,3 +44,8 @@ type Schema struct {
 	Props      []*SchemaProp
 	Enums      []*SchemaEnum
 }
+
+type SchemaHMapKeyValue[T any] struct {
+	Key   string
+	Value T
+}

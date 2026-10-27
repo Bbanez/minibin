@@ -1,12 +1,29 @@
 [
     {
+        "name": "KV",
+        "props": [
+            {
+                "name": "key",
+                "typ": "string",
+                "hmapTyp": "string",
+                "required": true
+            },
+            {
+                "name": "value",
+                "typ": "bytes",
+                "hmapTyp": "string",
+                "required": true
+            }
+        ]
+    },
+    {
         "name": "HMapTest",
         "props": [
             {
                 "name": "st",
                 "typ": "hmap",
                 "hmapTyp": "string",
-                "required": true
+                "required": false
             }
         ]
     }

@@ -4,8 +4,8 @@ const Common string = `package minibin
 
 import (
 	"fmt"
-	"strings"
 	"strconv"
+	"strings"
 )
 
 const maxUint32 = ^uint32(0)
@@ -18,121 +18,122 @@ func uint32Length(length int) uint32 {
 }
 
 func int32SliceToStringSlice(items []int32) []string {
-    strs := make([]string, len(items))
-    for i, v := range items {
-        strs[i] = strconv.Itoa(int(v))
-    }
-    return strs
+	strs := make([]string, len(items))
+	for i, v := range items {
+		strs[i] = strconv.Itoa(int(v))
+	}
+	return strs
 }
 func int32SliceToStringSliceRef(items []*int32) []string {
-    strs := make([]string, len(items))
-    for i, v := range items {
-        strs[i] = strconv.Itoa(int(*v))
-    }
-    return strs
+	strs := make([]string, len(items))
+	for i, v := range items {
+		strs[i] = strconv.Itoa(int(*v))
+	}
+	return strs
 }
 
 func int64SliceToStringSlice(items []int64) []string {
-    strs := make([]string, len(items))
-    for i, v := range items {
-        strs[i] = strconv.FormatInt(v, 10)
-    }
-    return strs
+	strs := make([]string, len(items))
+	for i, v := range items {
+		strs[i] = strconv.FormatInt(v, 10)
+	}
+	return strs
 }
 func int64SliceToStringSliceRef(items []*int64) []string {
-    strs := make([]string, len(items))
-    for i, v := range items {
-        strs[i] = strconv.FormatInt(*v, 10)
-    }
-    return strs
+	strs := make([]string, len(items))
+	for i, v := range items {
+		strs[i] = strconv.FormatInt(*v, 10)
+	}
+	return strs
 }
 
 func uint32SliceToStringSlice(items []uint32) []string {
-    strs := make([]string, len(items))
-    for i, v := range items {
-        strs[i] = strconv.FormatUint(uint64(v), 10)
-    }
-    return strs
+	strs := make([]string, len(items))
+	for i, v := range items {
+		strs[i] = strconv.FormatUint(uint64(v), 10)
+	}
+	return strs
 }
 func uint32SliceToStringSliceRef(items []*uint32) []string {
-    strs := make([]string, len(items))
-    for i, v := range items {
-        strs[i] = strconv.FormatUint(uint64(*v), 10)
-    }
-    return strs
+	strs := make([]string, len(items))
+	for i, v := range items {
+		strs[i] = strconv.FormatUint(uint64(*v), 10)
+	}
+	return strs
 }
 
 func uint64SliceToStringSlice(items []uint64) []string {
-    strs := make([]string, len(items))
-    for i, v := range items {
-        strs[i] = strconv.FormatUint(v, 10)
-    }
-    return strs
+	strs := make([]string, len(items))
+	for i, v := range items {
+		strs[i] = strconv.FormatUint(v, 10)
+	}
+	return strs
 }
 func uint64SliceToStringSliceRef(items []*uint64) []string {
-    strs := make([]string, len(items))
-    for i, v := range items {
-        strs[i] = strconv.FormatUint(*v, 10)
-    }
-    return strs
+	strs := make([]string, len(items))
+	for i, v := range items {
+		strs[i] = strconv.FormatUint(*v, 10)
+	}
+	return strs
 }
 
 func float32SliceToStringSlice(items []float32) []string {
-    strs := make([]string, len(items))
-    for i, v := range items {
-        strs[i] = strconv.FormatFloat(float64(v), 'f', -1, 32)
-    }
-    return strs
+	strs := make([]string, len(items))
+	for i, v := range items {
+		strs[i] = strconv.FormatFloat(float64(v), 'f', -1, 32)
+	}
+	return strs
 }
 func float32SliceToStringSliceRef(items []*float32) []string {
-    strs := make([]string, len(items))
-    for i, v := range items {
-        strs[i] = strconv.FormatFloat(float64(*v), 'f', -1, 32)
-    }
-    return strs
+	strs := make([]string, len(items))
+	for i, v := range items {
+		strs[i] = strconv.FormatFloat(float64(*v), 'f', -1, 32)
+	}
+	return strs
 }
 
 func float64SliceToStringSlice(items []float64) []string {
-    strs := make([]string, len(items))
-    for i, v := range items {
-        strs[i] = strconv.FormatFloat(v, 'f', -1, 64)
-    }
-    return strs
+	strs := make([]string, len(items))
+	for i, v := range items {
+		strs[i] = strconv.FormatFloat(v, 'f', -1, 64)
+	}
+	return strs
 }
 func float64SliceToStringSliceRef(items []*float64) []string {
-    strs := make([]string, len(items))
-    for i, v := range items {
-        strs[i] = strconv.FormatFloat(*v, 'f', -1, 64)
-    }
-    return strs
+	strs := make([]string, len(items))
+	for i, v := range items {
+		strs[i] = strconv.FormatFloat(*v, 'f', -1, 64)
+	}
+	return strs
 }
 
 func boolSliceToStringSlice(items []bool) []string {
-    strs := make([]string, len(items))
-    for i, v := range items {
-	    if v {
-	        strs[i] = "true"
-	    } else {
-	        strs[i] = "false"
-	    }
-    }
-    return strs
+	strs := make([]string, len(items))
+	for i, v := range items {
+		if v {
+			strs[i] = "true"
+		} else {
+			strs[i] = "false"
+		}
+	}
+	return strs
 }
 func boolSliceToStringSliceRef(items []*bool) []string {
-    strs := make([]string, len(items))
-    for i, v := range items {
-	    if *v {
-	        strs[i] = "true"
-	    } else {
-	        strs[i] = "false"
-	    }
-    }
-    return strs
+	strs := make([]string, len(items))
+	for i, v := range items {
+		if *v {
+			strs[i] = "true"
+		} else {
+			strs[i] = "false"
+		}
+	}
+	return strs
 }
 
 type EnumGen interface {
 	ToStr() string
 }
+
 func enumSliceToStringSlice[E EnumGen](items []E) []string {
 	strs := make([]string, len(items))
 	for i, v := range items {
@@ -152,6 +153,7 @@ func enumSliceToJSONStringSlice[E EnumGen](items []E) []string {
 type ObjGen interface {
 	ToJson() string
 }
+
 func objSliceToStringSlice[O ObjGen](items []O) []string {
 	strs := make([]string, len(items))
 	for i, v := range items {
@@ -161,11 +163,11 @@ func objSliceToStringSlice[O ObjGen](items []O) []string {
 }
 
 func bytesToStringSlice(items []byte) []string {
-    strs := make([]string, len(items))
-    for i, v := range items {
-        strs[i] = strconv.FormatUint(uint64(v), 10)
-    }
-    return strs
+	strs := make([]string, len(items))
+	for i, v := range items {
+		strs[i] = strconv.FormatUint(uint64(v), 10)
+	}
+	return strs
 }
 
 func cloneBytes(items []byte) []byte {
@@ -180,38 +182,38 @@ func bytesToStringSliceRef(items *[]byte) []string {
 	if items == nil {
 		return []string{}
 	}
-    strs := make([]string, len(*items))
-    for i, v := range *items {
-        strs[i] = strconv.FormatUint(uint64(v), 10)
-    }
-    return strs
+	strs := make([]string, len(*items))
+	for i, v := range *items {
+		strs[i] = strconv.FormatUint(uint64(v), 10)
+	}
+	return strs
 }
 
 func bytesSliceToStringSlice(items [][]byte) []string {
-    strs := make([]string, len(items))
-    for i, v := range items {
-        strs[i] = "[" + strings.Join(bytesToStringSlice(v), ",") + "]"
-    }
-    return strs
+	strs := make([]string, len(items))
+	for i, v := range items {
+		strs[i] = "[" + strings.Join(bytesToStringSlice(v), ",") + "]"
+	}
+	return strs
 }
 func bytesSliceToStringSliceRef(items []*[]byte) []string {
-    strs := make([]string, len(items))
-    for i, v := range items {
-        strs[i] = "[" + strings.Join(bytesToStringSliceRef(v), ",") + "]"
-    }
-    return strs
+	strs := make([]string, len(items))
+	for i, v := range items {
+		strs[i] = "[" + strings.Join(bytesToStringSliceRef(v), ",") + "]"
+	}
+	return strs
 }
 
 func joinStringPointers(ptrs []*string, sep string) string {
-    strs := make([]string, len(ptrs))
-    for i, p := range ptrs {
-        if p != nil {
-            strs[i] = *p
-        } else {
-            strs[i] = "" // or handle nil pointers as needed
-        }
-    }
-    return strings.Join(strs, sep)
+	strs := make([]string, len(ptrs))
+	for i, p := range ptrs {
+		if p != nil {
+			strs[i] = *p
+		} else {
+			strs[i] = "" // or handle nil pointers as needed
+		}
+	}
+	return strings.Join(strs, sep)
 }
 
 func quoteStrings(items []string) []string {
@@ -306,12 +308,12 @@ func unpack[T UnpackabeEntry](o T, b []byte, level string, depth int) error {
 		}
 		pos := int(bytes[atByte])
 		atByte += 1
-		typ, lenD := unmergeDataTypeAndLenDataLen(bytes[atByte])
+		typ := bytes[atByte]
 		atByte += 1
 		propName := o.GetPropNameAtPos(pos)
 		lvl := level + "." + propName
-		length := lenD + 1
-		remaining := len(bytes) - atByte
+		// length := lenD + 1
+		// remaining := len(bytes) - atByte
 		switch typ {
 		case 0:
 			if atByte >= len(bytes) {
@@ -320,98 +322,77 @@ func unpack[T UnpackabeEntry](o T, b []byte, level string, depth int) error {
 			atByte++
 			continue
 		case 1:
-			if length > 4 || length > remaining {
-				return fmt.Errorf("invalid or truncated length for %s", lvl)
-			}
-			dataLen := mergeUint32(length, bytes[atByte:atByte+length])
-			if uint64(dataLen) > uint64(remaining-length) {
-				return fmt.Errorf("truncated data for %s", lvl)
-			}
-			data, next := UnpackString(bytes, atByte, lenD)
+			data, next := UnpackString(bytes, atByte)
 			atByte = next
-			if err := o.SetPropAtPos(pos, data, lvl); err != nil { return err }
+			if err := o.SetPropAtPos(pos, data, lvl); err != nil {
+				return err
+			}
 		case 2:
-			if length > 4 || length+1 > remaining {
-				return fmt.Errorf("invalid or truncated data for %s", lvl)
-			}
-			data, next := UnpackInt32(bytes, atByte, lenD)
+			data, next := UnpackInt32(bytes, atByte)
 			atByte = next
-			if err := o.SetPropAtPos(pos, data, lvl); err != nil { return err }
+			if err := o.SetPropAtPos(pos, data, lvl); err != nil {
+				return err
+			}
 		case 3:
-			if length > 8 || length+1 > remaining {
-				return fmt.Errorf("invalid or truncated data for %s", lvl)
-			}
-			data, next := UnpackInt64(bytes, atByte, lenD)
+			data, next := UnpackInt64(bytes, atByte)
 			atByte = next
-			if err := o.SetPropAtPos(pos, data, lvl); err != nil { return err }
+			if err := o.SetPropAtPos(pos, data, lvl); err != nil {
+				return err
+			}
 		case 4:
-			if length > 4 || length > remaining {
-				return fmt.Errorf("invalid or truncated data for %s", lvl)
-			}
-			data, next := UnpackUint32(bytes, atByte, lenD)
+			data, next := UnpackUint32(bytes, atByte)
 			atByte = next
-			if err := o.SetPropAtPos(pos, data, lvl); err != nil { return err }
+			if err := o.SetPropAtPos(pos, data, lvl); err != nil {
+				return err
+			}
 		case 5:
-			if length > 8 || length > remaining {
-				return fmt.Errorf("invalid or truncated data for %s", lvl)
-			}
-			data, next := UnpackUint64(bytes, atByte, lenD)
+			data, next := UnpackUint64(bytes, atByte)
 			atByte = next
-			if err := o.SetPropAtPos(pos, data, lvl); err != nil { return err }
+			if err := o.SetPropAtPos(pos, data, lvl); err != nil {
+				return err
+			}
 		case 6:
-			if length > 4 || length+1 > remaining {
-				return fmt.Errorf("invalid or truncated data for %s", lvl)
-			}
-			data, next := UnpackInt32(bytes, atByte, lenD)
+			data, next := UnpackInt32(bytes, atByte)
 			atByte = next
-			if err := o.SetPropAtPos(pos, data, lvl); err != nil { return err }
+			if err := o.SetPropAtPos(pos, data, lvl); err != nil {
+				return err
+			}
 		case 7:
-			if length > 8 || length+1 > remaining {
-				return fmt.Errorf("invalid or truncated data for %s", lvl)
-			}
-			data, next := UnpackInt64(bytes, atByte, lenD)
+			data, next := UnpackInt64(bytes, atByte)
 			atByte = next
-			if err := o.SetPropAtPos(pos, data, lvl); err != nil { return err }
-		case 8:
-			if lenD != 0 || atByte >= len(bytes) {
-				return fmt.Errorf("invalid data length for %s", lvl)
+			if err := o.SetPropAtPos(pos, data, lvl); err != nil {
+				return err
 			}
+		case 8:
 			data, next := UnpackBool(bytes, atByte)
 			atByte = next
-			if err := o.SetPropAtPos(pos, data, lvl); err != nil { return err }
+			if err := o.SetPropAtPos(pos, data, lvl); err != nil {
+				return err
+			}
 		case 9:
-			if length > 4 || length > remaining {
-				return fmt.Errorf("invalid or truncated length for %s", lvl)
-			}
-			dataLen := mergeUint32(length, bytes[atByte:atByte+length])
-			if uint64(dataLen) > uint64(remaining-length) {
-				return fmt.Errorf("truncated data for %s", lvl)
-			}
-			data, next := UnpackObject(bytes, atByte, lenD)
+			data, next := UnpackObject(bytes, atByte)
 			atByte = next
-			if err := o.SetPropAtPos(pos, data, lvl); err != nil { return err }
+			if err := o.SetPropAtPos(pos, data, lvl); err != nil {
+				return err
+			}
 		case 10:
-			if length > 4 || length > remaining {
-				return fmt.Errorf("invalid or truncated length for %s", lvl)
-			}
-			dataLen := mergeUint32(length, bytes[atByte:atByte+length])
-			if uint64(dataLen) > uint64(remaining-length) {
-				return fmt.Errorf("truncated data for %s", lvl)
-			}
-			data, next := UnpackString(bytes, atByte, lenD)
+			data, next := UnpackString(bytes, atByte)
 			atByte = next
-			if err := o.SetPropAtPos(pos, data, lvl); err != nil { return err }
+			if err := o.SetPropAtPos(pos, data, lvl); err != nil {
+				return err
+			}
 		case 11:
-			if length > 4 || length > remaining {
-				return fmt.Errorf("invalid or truncated length for %s", lvl)
-			}
-			dataLen := mergeUint32(length, bytes[atByte:atByte+length])
-			if uint64(dataLen) > uint64(remaining-length) {
-				return fmt.Errorf("truncated data for %s", lvl)
-			}
-			data, next := UnpackBytes(bytes, atByte, lenD)
+			data, next := UnpackBytes(bytes, atByte)
 			atByte = next
-			if err := o.SetPropAtPos(pos, data, lvl); err != nil { return err }
+			if err := o.SetPropAtPos(pos, data, lvl); err != nil {
+				return err
+			}
+		case 12:
+			k, v, next := UnpackHMap(bytes, atByte)
+			if err := o.SetPropAtPos(pos, map[string][]byte{k: v}, lvl); err != nil {
+				return err
+			}
+			atByte = next
 		default:
 			return fmt.Errorf(
 				"Invalid datatype %s",
@@ -425,14 +406,15 @@ func unpack[T UnpackabeEntry](o T, b []byte, level string, depth int) error {
 func PackString(s string, pos int) []byte {
 	data := []byte(s)
 	lenD, dataLenBytes := SplitUint32(uint32Length(len(data)))
-	typLenD := mergeDataTypeAndLenDataLen(1, byte(lenD))
-	result := []byte{byte(pos), typLenD}
+	typ := byte(1)
+	result := []byte{byte(pos), typ, byte(lenD)}
 	result = append(result, dataLenBytes...)
 	result = append(result, data...)
 	return result
 }
-func UnpackString(b []byte, atByte int, lenD int) (string, int) {
-	lenD++
+func UnpackString(b []byte, atByte int) (string, int) {
+	lenD := int(b[atByte])
+	atByte++
 	dataLen := int(mergeUint32(lenD, b[atByte:atByte+lenD]))
 	atByte += lenD
 	dataBytes := b[atByte : atByte+dataLen]
@@ -446,14 +428,14 @@ func PackInt32(num int32, pos int) []byte {
 		num = -num
 	}
 	lenD, data := SplitUint32(uint32(num))
-	typLenD := mergeDataTypeAndLenDataLen(2, byte(lenD))
-	result := []byte{byte(pos), typLenD, neg}
+	typ := byte(2)
+	result := []byte{byte(pos), typ, byte(lenD), neg}
 	result = append(result, data...)
 	return result
 }
-func UnpackInt32(b []byte, atByte int, lenD int) (int32, int) {
-	// This is required because lenD == 0 represents 1 byte of data
-	lenD++
+func UnpackInt32(b []byte, atByte int) (int32, int) {
+	lenD := int(b[atByte])
+	atByte++
 	neg := b[atByte]
 	atByte++
 	data := mergeUint32(lenD, b[atByte:atByte+lenD])
@@ -471,14 +453,15 @@ func PackInt64(num int64, pos int) []byte {
 		num = -num
 	}
 	lenD, data := SplitUint64(uint64(num))
-	typLenD := mergeDataTypeAndLenDataLen(3, byte(lenD))
-	result := []byte{byte(pos), typLenD, neg}
+	// typLenD := mergeDataTypeAndLenDataLen(3, byte(lenD))
+	typ := byte(3)
+	result := []byte{byte(pos), typ, byte(lenD), neg}
 	result = append(result, data...)
 	return result
 }
-func UnpackInt64(b []byte, atByte int, lenD int) (int64, int) {
-	// This is required because lenD == 0 represents 1 byte of data
-	lenD++
+func UnpackInt64(b []byte, atByte int) (int64, int) {
+	lenD := int(b[atByte])
+	atByte++
 	neg := b[atByte]
 	atByte++
 	data := mergeUint64(lenD, b[atByte:atByte+lenD])
@@ -491,14 +474,14 @@ func UnpackInt64(b []byte, atByte int, lenD int) (int64, int) {
 
 func PackUint32(num uint32, pos int) []byte {
 	lenD, data := SplitUint32(num)
-	typLenD := mergeDataTypeAndLenDataLen(4, byte(lenD))
-	result := []byte{byte(pos), typLenD}
+	typ := byte(4)
+	result := []byte{byte(pos), typ, byte(lenD)}
 	result = append(result, data...)
 	return result
 }
-func UnpackUint32(b []byte, atByte int, lenD int) (uint32, int) {
-	// This is required because lenD == 0 represents 1 byte of data
-	lenD++
+func UnpackUint32(b []byte, atByte int) (uint32, int) {
+	lenD := int(b[atByte])
+	atByte++
 	data := mergeUint32(lenD, b[atByte:atByte+lenD])
 	atByte += lenD
 	return data, atByte
@@ -506,14 +489,14 @@ func UnpackUint32(b []byte, atByte int, lenD int) (uint32, int) {
 
 func PackUint64(num uint64, pos int) []byte {
 	lenD, data := SplitUint64(num)
-	typLenD := mergeDataTypeAndLenDataLen(5, byte(lenD))
-	result := []byte{byte(pos), typLenD}
+	typ := byte(5)
+	result := []byte{byte(pos), typ, byte(lenD)}
 	result = append(result, data...)
 	return result
 }
-func UnpackUint64(b []byte, atByte int, lenD int) (uint64, int) {
-	// This is required because lenD == 0 represents 1 byte of data
-	lenD++
+func UnpackUint64(b []byte, atByte int) (uint64, int) {
+	lenD := int(b[atByte])
+	atByte++
 	data := mergeUint64(lenD, b[atByte:atByte+lenD])
 	atByte += lenD
 	return data, atByte
@@ -527,8 +510,8 @@ func PackFloat32(fnum float32, pos int, decimals float32) []byte {
 		num = -num
 	}
 	lenD, data := SplitUint32(uint32(num))
-	typLenD := mergeDataTypeAndLenDataLen(6, byte(lenD))
-	result := []byte{byte(pos), typLenD, neg}
+	typ := byte(6)
+	result := []byte{byte(pos), typ, byte(lenD), neg}
 	result = append(result, data...)
 	return result
 }
@@ -541,15 +524,15 @@ func PackFloat64(fnum float64, pos int, decimals float32) []byte {
 		num = -num
 	}
 	lenD, data := SplitUint64(uint64(num))
-	typLenD := mergeDataTypeAndLenDataLen(7, byte(lenD))
-	result := []byte{byte(pos), typLenD, neg}
+	typ := byte(7)
+	result := []byte{byte(pos), typ, byte(lenD), neg}
 	result = append(result, data...)
 	return result
 }
 
 func PackBool(num bool, pos int) []byte {
-	typLenD := mergeDataTypeAndLenDataLen(8, 0)
-	result := []byte{byte(pos), typLenD}
+	typ := byte(8)
+	result := []byte{byte(pos), typ}
 	if num {
 		result = append(result, 1)
 	} else {
@@ -571,14 +554,15 @@ func UnpackBool(b []byte, atByte int) (bool, int) {
 
 func PackObject(data []byte, pos int) []byte {
 	lenD, dataLenBytes := SplitUint32(uint32Length(len(data)))
-	typLenD := mergeDataTypeAndLenDataLen(9, byte(lenD))
-	result := []byte{byte(pos), typLenD}
+	typ := byte(9)
+	result := []byte{byte(pos), typ, byte(lenD)}
 	result = append(result, dataLenBytes...)
 	result = append(result, data...)
 	return result
 }
-func UnpackObject(b []byte, atByte int, lenD int) ([]byte, int) {
-	lenD++
+func UnpackObject(b []byte, atByte int) ([]byte, int) {
+	lenD := int(b[atByte])
+	atByte++
 	dataLen := int(mergeUint32(lenD, b[atByte:atByte+lenD]))
 	atByte += lenD
 	dataBytes := b[atByte : atByte+dataLen]
@@ -588,14 +572,15 @@ func UnpackObject(b []byte, atByte int, lenD int) ([]byte, int) {
 func PackEnum(s string, pos int) []byte {
 	data := []byte(s)
 	lenD, dataLenBytes := SplitUint32(uint32Length(len(data)))
-	typLenD := mergeDataTypeAndLenDataLen(10, byte(lenD))
-	result := []byte{byte(pos), typLenD}
+	typ := byte(10)
+	result := []byte{byte(pos), typ, byte(lenD)}
 	result = append(result, dataLenBytes...)
 	result = append(result, data...)
 	return result
 }
-func UnpackEnum(b []byte, atByte int, lenD int) (string, int) {
-	lenD++
+func UnpackEnum(b []byte, atByte int) (string, int) {
+	lenD := int(b[atByte])
+	atByte++
 	dataLen := int(mergeUint32(lenD, b[atByte:atByte+lenD]))
 	atByte += lenD
 	dataBytes := b[atByte : atByte+dataLen]
@@ -604,18 +589,47 @@ func UnpackEnum(b []byte, atByte int, lenD int) (string, int) {
 
 func PackBytes(s []byte, pos int) []byte {
 	lenD, dataLenBytes := SplitUint32(uint32Length(len(s)))
-	typLenD := mergeDataTypeAndLenDataLen(11, byte(lenD))
-	result := []byte{byte(pos), typLenD}
+	typ := byte(11)
+	result := []byte{byte(pos), typ, byte(lenD)}
 	result = append(result, dataLenBytes...)
 	result = append(result, s...)
 	return result
 }
-func UnpackBytes(b []byte, atByte int, lenD int) ([]byte, int) {
-	lenD++
+func UnpackBytes(b []byte, atByte int) ([]byte, int) {
+	lenD := int(b[atByte])
+	atByte++
 	dataLen := int(mergeUint32(lenD, b[atByte:atByte+lenD]))
 	atByte += lenD
 	dataBytes := cloneBytes(b[atByte : atByte+dataLen])
 	return dataBytes, atByte + dataLen
+}
+
+func PackHMap(key string, value []byte, pos int) []byte {
+	keyLenD, keyLenDBytes := SplitUint32(uint32Length(len(key)))
+	valueLenD, valueLenDBytes := SplitUint32(uint32Length(len(value)))
+	typ := byte(12)
+	result := []byte{byte(pos), typ, byte(keyLenD)}
+	result = append(result, keyLenDBytes...)
+	result = append(result, []byte(key)...)
+	result = append(result, byte(valueLenD))
+	result = append(result, valueLenDBytes...)
+	result = append(result, value...)
+	return result
+}
+func UnpackHMap(b []byte, atByte int) (string, []byte, int) {
+	keyLenD := int(b[atByte])
+	atByte++
+	keyLenDBytes := int(mergeUint32(keyLenD, b[atByte:atByte+keyLenD]))
+	atByte += keyLenD
+	key := string(b[atByte : atByte+keyLenDBytes])
+	atByte += keyLenDBytes
+	valueLenD := int(b[atByte])
+	atByte++
+	valueLenDBytes := int(mergeUint32(valueLenD, b[atByte:atByte+valueLenD]))
+	atByte += valueLenD
+	value := cloneBytes(b[atByte : atByte+valueLenDBytes])
+	atByte += valueLenDBytes
+	return key, value, atByte
 }
 
 func mergeDataTypeAndLenDataLen(typ byte, lenD byte) byte {
@@ -632,23 +646,23 @@ func SplitUint32(unum uint32) (int, []byte) {
 	var lenD int
 	var b []byte
 	if unum < 0xFF {
-		lenD = 0
+		lenD = 1
 		b = []byte{byte(unum)}
 	} else if unum < 0xFFFF {
-		lenD = 1
+		lenD = 2
 		b = []byte{
 			byte((0xFF00 & unum) >> 8),
 			byte(0x00FF & unum),
 		}
 	} else if unum < 0xFFFFFF {
-		lenD = 2
+		lenD = 3
 		b = []byte{
 			byte((0xFF0000 & unum) >> 16),
 			byte((0x00FF00 & unum) >> 8),
 			byte(0x0000FF & unum),
 		}
 	} else {
-		lenD = 3
+		lenD = 4
 		b = []byte{
 			byte((0xFF000000 & unum) >> 24),
 			byte((0x00FF0000 & unum) >> 16),
@@ -681,23 +695,23 @@ func SplitUint64(unum uint64) (int, []byte) {
 	var lenD int
 	var b []byte
 	if unum < 0xFF {
-		lenD = 0
+		lenD = 1
 		b = []byte{byte(unum)}
 	} else if unum < 0xFFFF {
-		lenD = 1
+		lenD = 2
 		b = []byte{
 			byte((0xFF00 & unum) >> 8),
 			byte(0x00FF & unum),
 		}
 	} else if unum < 0xFFFFFF {
-		lenD = 2
+		lenD = 3
 		b = []byte{
 			byte((0xFF0000 & unum) >> 16),
 			byte((0x00FF00 & unum) >> 8),
 			byte(0x0000FF & unum),
 		}
 	} else if unum < 0xFFFFFFFF {
-		lenD = 3
+		lenD = 4
 		b = make([]byte, lenD+1)
 		b = []byte{
 			byte((0xFF000000 & unum) >> 24),
@@ -706,7 +720,7 @@ func SplitUint64(unum uint64) (int, []byte) {
 			byte(0x000000FF & unum),
 		}
 	} else if unum < 0xFFFFFFFFFF {
-		lenD = 4
+		lenD = 5
 		b = []byte{
 			byte((0xFF00000000 & unum) >> 32),
 			byte((0x00FF000000 & unum) >> 24),
@@ -715,7 +729,7 @@ func SplitUint64(unum uint64) (int, []byte) {
 			byte(0x00000000FF & unum),
 		}
 	} else if unum < 0xFFFFFFFFFFFF {
-		lenD = 5
+		lenD = 6
 		b = []byte{
 			byte((0xFF0000000000 & unum) >> 40),
 			byte((0x00FF00000000 & unum) >> 32),
@@ -725,7 +739,7 @@ func SplitUint64(unum uint64) (int, []byte) {
 			byte(0x0000000000FF & unum),
 		}
 	} else if unum < 0xFFFFFFFFFFFFFF {
-		lenD = 6
+		lenD = 7
 		b = []byte{
 			byte((0xFF000000000000 & unum) >> 48),
 			byte((0x00FF0000000000 & unum) >> 40),
@@ -736,7 +750,7 @@ func SplitUint64(unum uint64) (int, []byte) {
 			byte(0x000000000000FF & unum),
 		}
 	} else {
-		lenD = 7
+		lenD = 8
 		b = []byte{
 			byte((0xFF00000000000000 & unum) >> 56),
 			byte((0x00FF000000000000 & unum) >> 48),
@@ -798,4 +812,5 @@ func mergeUint64(lenD int, bytes []byte) uint64 {
 			uint64(bytes[7])
 	}
 }
+
 `

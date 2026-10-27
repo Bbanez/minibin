@@ -12,6 +12,7 @@ import (
 	parser_ts "github.com/bbanez/minibin/src/parser/ts"
 	"github.com/bbanez/minibin/src/schema"
 	"github.com/bbanez/minibin/src/utils"
+	minibin "github.com/bbanez/minibin/tests/dist/go"
 )
 
 const version = "v0.5.0"
@@ -20,6 +21,23 @@ type BuildOutputs struct {
 	Name     string
 	Platform string
 	Arch     string
+}
+
+func tt() {
+	fmt.Println("Hello World")
+	hmap := minibin.NewHMapTest(
+		&map[string]string{
+			"a": "b",
+			// "key2": "value2",
+		},
+	)
+	p := hmap.Pack()
+	fmt.Println("HMapTest packed successfully:", p)
+	up, err := minibin.UnpackHMapTest(p, nil)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("HMapTest packed and unpacked successfully:", *up.St)
 }
 
 func main() {
@@ -188,4 +206,5 @@ func main() {
 		item := output[i]
 		fs.Write([]byte(item.Content), item.Path)
 	}
+	tt()
 }
