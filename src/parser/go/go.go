@@ -75,6 +75,7 @@ func goTagValue(value string) string {
 }
 
 func Parse(schemas []*schema.Schema, args *utils.Args) []*p.ParserOutputItem {
+	schemas = append(schemas, GoOpenApiObjectSchema())
 	outputItems := []*p.ParserOutputItem{
 		{
 			Path:    "minibin__common.go",

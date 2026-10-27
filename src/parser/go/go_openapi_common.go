@@ -1,5 +1,73 @@
 package parser_go
 
+import (
+	"github.com/bbanez/minibin/src/schema"
+	"github.com/bbanez/minibin/src/utils"
+)
+
+func GoOpenApiObjectSchema() *schema.Schema {
+	return &schema.Schema{
+		Name:       "OpenApiObjectSchema",
+		PascalName: "OpenApiObjectSchema",
+		RPath:      "openapi_object_schema",
+		Props: []*schema.SchemaProp{
+			{
+				Name:     "format",
+				GoName:   "Format",
+				Typ:      "string",
+				Required: false,
+			},
+			{
+				Name:     "typ",
+				GoName:   "Typ",
+				Typ:      "string",
+				Required: false,
+			},
+			{
+				Name:     "enum",
+				GoName:   "Enum",
+				Typ:      "string",
+				Required: false,
+				Array:    true,
+			},
+			{
+				Name:     "ref",
+				GoName:   "Ref",
+				Typ:      "string",
+				Required: false,
+			},
+			{
+				Name:     "schema",
+				GoName:   "Schema",
+				Typ:      "object",
+				Ref:      utils.StringRef(".OpenApiObjectSchema"),
+				Required: false,
+			},
+			{
+				Name:     "required",
+				GoName:   "Required",
+				Typ:      "string",
+				Required: false,
+				Array:    true,
+			},
+			{
+				Name:     "properties",
+				GoName:   "Properties",
+				Typ:      "hmap",
+				HMapTyp:  utils.StringRef(".OpenApiObjectSchema"),
+				Required: false,
+			},
+			{
+				Name:     "items",
+				GoName:   "Items",
+				Typ:      "object",
+				Ref:      utils.StringRef(".OpenApiObjectSchema"),
+				Required: false,
+			},
+		},
+	}
+}
+
 const GoOpenApiModel = "package minibin\n\n" +
 	"\n" +
 	"type OpenApiObjectSchema struct {\n" +
