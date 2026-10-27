@@ -83,6 +83,14 @@ func Read(path string) []*Schema {
 					if prop.Typ == "enum" {
 						prop.Required = true
 					}
+					if prop.Typ == "hmap" && prop.HMapTyp == nil {
+						panic(
+							fmt.Errorf(
+								"\nMissing property \"hmap_typ\" in %s.props[%d]",
+								sch.RPath, k,
+							),
+						)
+					}
 				}
 			}
 		}

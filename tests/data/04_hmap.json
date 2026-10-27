@@ -1,0 +1,13 @@
+[
+    {
+        "name": "HMapTest",
+        "props": [
+            {
+                "name": "st",
+                "typ": "hmap",
+                "hmapTyp": "string",
+                "required": true
+            }
+        ]
+    }
+]

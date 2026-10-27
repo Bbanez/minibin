@@ -12,6 +12,7 @@ var SchemaPropAllowedTypes = []string{
 	"object",
 	"enum",
 	"bytes",
+	"hmap",
 }
 
 type SchemaProp struct {
@@ -25,6 +26,8 @@ type SchemaProp struct {
 	Required bool
 	Array    bool
 	BsonName *string
+	JsonName *string
+	HMapTyp  *string
 }
 
 type SchemaEnum struct {

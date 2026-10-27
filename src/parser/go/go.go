@@ -172,6 +172,11 @@ func parseEnum(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 	return &output
 }
 
+func parseHMap(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
+	// TODO: Implement HMap parsing logic
+	panic("parseHMap not implemented yet")
+}
+
 func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 	if !validGoIdentifier(sch.PascalName) {
 		panic(fmt.Errorf("invalid Go schema name %q in %s", sch.Name, sch.RPath))
@@ -452,7 +457,11 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 				prop.GoName,
 			)
 			optStr = fmt.Sprintf("\"[\" + strings.Join(bytesToStringSlice(*o.%s), \",\") + \"]\"", prop.GoName)
+		case "hmap":
+			// TODO: Implement HMap JSON serialization logic
+			panic("HMap JSON serialization not implemented yet")
 		}
+
 		if prop.Required {
 			if prop.Array {
 				toJsonFn += fmt.Sprintf(""+
@@ -814,6 +823,13 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 				packFn += packWrapperOptional("PackBytes", prop.GoName, i, prop.Array, "")
 			}
 			setPropFn += setPropWrapperNormal(prop.GoName, typ, i, prop.Array, prop.Required)
+		case "hmap":
+			typ = *prop.HMapTyp
+			if strings.HasPrefix(typ, ".") {
+				typ = goRefType(prop.Ref, fmt.Sprintf("%s.props[%d]", sch.RPath, i))
+			}
+			// TODO: Implement HMap copy, pack, and set property logic
+			panic("HMap copy, pack, and set property logic not implemented yet")
 		default:
 			panic(fmt.Errorf(
 				"Invalid type '%s' found in: %s.props[%d]",
