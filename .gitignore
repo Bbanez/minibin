@@ -6,3 +6,4 @@ minibin_*
 .obsidian
 .idea
 
+/src/string_templates

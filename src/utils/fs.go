@@ -8,9 +8,17 @@ import (
 
 type FS struct {
 	isWin    bool
-	Slash    string
+	slash    string
 	BasePath string
 	baseLen  int
+}
+
+func Cwd() string {
+	dir, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+	return dir
 }
 
 // @basePath If nil then use current working directory
@@ -30,7 +38,7 @@ func NewFS(basePath *[]string) FS {
 	}
 	fs := FS{
 		isWin:    isWin,
-		Slash:    slash,
+		slash:    slash,
 		BasePath: bp,
 		baseLen:  len(strings.Split(bp, slash)),
 	}
@@ -39,7 +47,11 @@ func NewFS(basePath *[]string) FS {
 }
 
 func (fs *FS) Path(path ...string) string {
-	return fs.BasePath + fs.Slash + strings.Join(path, fs.Slash)
+	return fs.BasePath + fs.slash + strings.Join(path, fs.slash)
+}
+
+func (fs FS) Join(path ...string) string {
+	return strings.Join(path, fs.slash)
 }
 
 func (fs *FS) ToPath(path string) []string {
@@ -72,7 +84,7 @@ func (fs *FS) Exists(path ...string) bool {
 }
 
 func (fs *FS) mkdirIfNotExists(path string, skipRoot bool) {
-	parts := strings.Split(path, fs.Slash)
+	parts := strings.Split(path, fs.slash)
 	startAt := 0
 	if skipRoot {
 		startAt = fs.baseLen
@@ -82,11 +94,23 @@ func (fs *FS) mkdirIfNotExists(path string, skipRoot bool) {
 		if part == "" {
 			continue
 		}
-		path = strings.Join(parts[:i+1], fs.Slash)
+		path = strings.Join(parts[:i+1], fs.slash)
 		if !dirExists(path) {
 			os.Mkdir(path, 0755)
 		}
 	}
+}
+
+func (fs *FS) Mkdir(path ...string) Result[bool] {
+	aPath := fs.Path(path...)
+	if dirExists(aPath) {
+		return Ok(true)
+	}
+	err := os.MkdirAll(aPath, 0755)
+	if err != nil {
+		return Err[bool](err)
+	}
+	return Ok(true)
 }
 
 func (fs *FS) Write(data []byte, path ...string) Result[bool] {
@@ -149,6 +173,45 @@ func (fs *FS) Delete(path ...string) Result[bool] {
 	return Ok(true)
 }
 
+type FileTreeNode struct {
+	AbsPath string
+	RelPath string
+	DirPath string
+}
+
+func (fs *FS) FileTree(startLocation []string, currentLocation []string) (*Array[FileTreeNode], error) {
+	startLoc := fs.Path(startLocation...)
+	currLoc := fs.Join(currentLocation...)
+	output := array[FileTreeNode]()
+	files, err := os.ReadDir(currLoc)
+	if err != nil {
+		return &output, err
+	}
+	for _, file := range files {
+		filePath := startLoc + fs.slash + currLoc + fs.slash + file.Name()
+		if file.IsDir() {
+			children, err := fs.FileTree(
+				startLocation,
+				append(currentLocation, file.Name()),
+			)
+			if err != nil {
+				return &output, err
+			}
+			output.PushMany(children.Items...)
+		} else {
+			output.Push(FileTreeNode{
+				AbsPath: filePath,
+				RelPath: strings.TrimPrefix(
+					strings.Replace(filePath, startLoc, "", 1),
+					"/",
+				),
+				DirPath: currLoc,
+			})
+		}
+	}
+	return &output, nil
+}
+
 func dirExists(path string) bool {
 	info, err := os.Stat(path)
 	if err != nil {
@@ -159,30 +222,21 @@ func dirExists(path string) bool {
 	return info.IsDir()
 }
 
-func (fs *FS) ListFiles(path ...string) Result[[]string] {
-	aPath := fs.Path(path...)
-	entries, err := os.ReadDir(aPath)
+func listFiles(dir string) Result[[]string] {
+	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return Err[[]string](err)
 	}
 	var files []string = []string{}
 	for _, entry := range entries {
-		nPath := path
-		nPath = append(nPath, entry.Name())
 		if entry.IsDir() {
-			childFiles := fs.ListFiles(nPath...)
+			childFiles := listFiles(dir + "/" + entry.Name())
 			if childFiles.Error != nil {
 				return Err[[]string](childFiles.Error)
 			}
 			files = append(files, childFiles.Value...)
 		} else {
-			pathJoined := strings.Join(path, "/")
-			if pathJoined == "" {
-				files = append(files, entry.Name())
-			} else {
-				pathJoined := strings.TrimPrefix(pathJoined, "/")
-				files = append(files, pathJoined+"/"+entry.Name())
-			}
+			files = append(files, dir+"/"+entry.Name())
 		}
 	}
 	return Ok(files)

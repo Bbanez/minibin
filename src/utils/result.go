@@ -20,7 +20,14 @@ func Err[T any](err error) Result[T] {
 	}
 }
 
-func (r *Result[T]) Unwrap() T {
+func (r *Result[T]) unwrap() T {
+	if !r.Ok {
+		panic(r.Error)
+	}
+	return r.Value
+}
+
+func (r Result[T]) Unwrap() T {
 	if !r.Ok {
 		panic(r.Error)
 	}

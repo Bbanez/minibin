@@ -337,6 +337,9 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 	importStrconv := true
 	toJsonWrapper := func(prop *schema.SchemaProp) {
 		jsonKey := goString("\"" + prop.Name + "\":")
+		if prop.JsonName != nil {
+			jsonKey = *prop.JsonName
+		}
 		var reqArrStr string
 		var reqStr string
 		var optArrStr string
@@ -849,6 +852,7 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			valuePacker := ""
 			valueUnpacker := ""
 			decimalDevider := ""
+			derefVal := ""
 			switch *prop.HMapTyp {
 			case "string":
 				valuePacker = "PackString(v, 0)"
@@ -886,9 +890,11 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			case "object":
 				valuePacker = "v.Pack()"
 				valueUnpacker = "Unpack" + goRefType(prop.Ref, fmt.Sprintf("%s.props[%d]", sch.RPath, i)) + "(v, nil)"
+				derefVal = "*"
 			case "enum":
 				valuePacker = "v.Pack()"
 				valueUnpacker = "Unpack" + goRefType(prop.Ref, fmt.Sprintf("%s.props[%d]", sch.RPath, i)) + "(v, nil)"
+				derefVal = "*"
 			default:
 				panic(fmt.Errorf(
 					"Invalid HMap value type '%s' found in: %s.props[%d]",
@@ -924,10 +930,10 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 				createIfNil+
 				"        for k, v := range d {\n"+
 				"			val, _ := %s\n"+
-				"           (%so.%s)[k] = *val%s\n"+
+				"           (%so.%s)[k] = %sval%s\n"+
 				"		 }\n"+
 				"",
-				i, valueUnpacker, derefPrt, prop.GoName, decimalDevider,
+				i, valueUnpacker, derefPrt, prop.GoName, derefVal, decimalDevider,
 			)
 		default:
 			panic(fmt.Errorf(

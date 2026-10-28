@@ -2,55 +2,117 @@ package utils
 
 import (
 	"os"
+	"slices"
 	"strings"
 )
 
 type Args struct {
-	Input         string
-	Output        []string
-	Lang          string
-	PackageBase   string
-	InjectBson    bool
-	Clear         bool
-	ProjectBuild  bool
-	CreateRelease bool
+	StringTemplates bool
+	Setup           bool
+	Input           []string
+	Output          []string
+	Lang            string
+	PackageBase     string
+	InjectBson      bool
+	Clear           bool
+	ProjectBuild    bool
+	CreateRelease   bool
 }
 
-func GetArgs() Args {
-	args := Args{
-		Input:       "minibin-schemas",
-		Output:      []string{"src", "minibin"},
-		Lang:        "go",
-		PackageBase: "",
-		InjectBson:  false,
-		Clear:       false,
-	}
-	rawArgs := os.Args[1:]
-	i := 0
-	for i < len(rawArgs) {
-		if i+1 >= len(rawArgs) {
-			break
-		}
-		value := rawArgs[i]
-		switch value {
-		case "-o":
-			args.Output = strings.Split(rawArgs[i+1], "/")
-		case "-i":
-			args.Input = rawArgs[i+1]
-		case "-l":
-			args.Lang = rawArgs[i+1]
-		case "-pkg":
-			args.PackageBase = rawArgs[i+1]
-		case "-bson":
+type ArgInfo struct {
+	flags         []string
+	typ           string
+	desc          string
+	allowedValues *[]string
+	parse         func(argv []string, at_idx int, self *ArgInfo, args *Args)
+}
+
+var argInfos = []ArgInfo{
+	{
+		flags: []string{"--input", "-input", "input", "--i", "-i", "i"},
+		desc:  "Where to find schema files, Default: minibin-schemas",
+		typ:   "string",
+		parse: func(argv []string, at_idx int, self *ArgInfo, args *Args) {
+			args.Input = strings.Split(argv[at_idx], "/")
+		},
+	},
+	{
+		flags: []string{"--output", "-output", "output", "--o", "-o", "o"},
+		desc:  "Where to output generated files",
+		typ:   "string",
+		parse: func(argv []string, at_idx int, self *ArgInfo, args *Args) {
+			args.Output = strings.Split(argv[at_idx], "/")
+		},
+	},
+	{
+		flags:         []string{"--language", "-language", "language", "--l", "-l", "l"},
+		desc:          "For which language to generate code, Default: go",
+		typ:           "string",
+		allowedValues: &[]string{"go", "cpp", "rust", "ts"},
+		parse: func(argv []string, at_idx int, self *ArgInfo, args *Args) {
+			args.Lang = argv[at_idx]
+		},
+	},
+	{
+		flags: []string{"--package", "-package", "package", "--pkg", "-pkg", "pkg"},
+		desc:  "Base package name for generated code, Default: empty",
+		typ:   "string",
+		parse: func(argv []string, at_idx int, self *ArgInfo, args *Args) {
+			args.PackageBase = argv[at_idx]
+		},
+	},
+	{
+		flags: []string{"--bson", "-bson", "bson"},
+		desc:  "Base package name for generated code, Default: empty",
+		typ:   "bool",
+		parse: func(argv []string, at_idx int, self *ArgInfo, args *Args) {
 			args.InjectBson = true
-		case "-clear":
+		},
+	},
+	{
+		flags: []string{"--clear", "-clear", "clear", "--c", "-c", "c"},
+		desc:  "Clear minibin output directory",
+		typ:   "bool",
+		parse: func(argv []string, at_idx int, self *ArgInfo, args *Args) {
 			args.Clear = true
-		case "-project-build":
+		},
+	},
+	{
+		flags: []string{"--build-project", "-build-project", "build-project", "--bp", "-bp", "bp"},
+		desc:  "Build the project and create executable binaries",
+		typ:   "bool",
+		parse: func(argv []string, at_idx int, self *ArgInfo, args *Args) {
 			args.ProjectBuild = true
-		case "-r":
+		},
+	},
+	{
+		flags: []string{"--release", "-release", "release", "--r", "-r", "r"},
+		desc:  "Create a release and deploy",
+		typ:   "bool",
+		parse: func(argv []string, at_idx int, self *ArgInfo, args *Args) {
 			args.CreateRelease = true
+		},
+	},
+	{
+		flags: []string{"--string-templates", "string-templates", "st"},
+		desc:  "Generate string templates",
+		typ:   "bool",
+		parse: func(argv []string, at_idx int, self *ArgInfo, args *Args) {
+			args.StringTemplates = true
+		},
+	},
+}
+
+func GetArgs() *Args {
+	argv := os.Args[1:]
+	args := &Args{}
+	for _, info := range argInfos {
+		for idx, arg_value := range argv {
+			if !slices.Contains(info.flags, arg_value) {
+				continue
+			}
+			info.parse(argv, idx, &info, args)
 		}
-		i += 2
 	}
 	return args
 }
