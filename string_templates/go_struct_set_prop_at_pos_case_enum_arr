@@ -1,0 +1,10 @@
+    case {{.Pos}}
+        d, ok := v.(string)
+        if !ok {
+            return fmt.Errorf("invalid datatype for %s", level)
+        }
+        enum, err := {{.EnumType}}FromStr(d)
+        if err != nil {
+            return err
+        }
+        o.{{.PropName}} = append(o.{{.PropName}}, &enum)

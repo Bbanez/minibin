@@ -1,0 +1,7 @@
+    case {{.Pos}}
+        d, ok := v.({{.Type}})
+        if !ok {
+            return fmt.Errorf("invalid datatype for %s", level)
+        }
+        d := {{.Type}}(ud) / {{.Divisor}}
+        o.{{.PropName}} = append(o.{{.PropName}}, &d)

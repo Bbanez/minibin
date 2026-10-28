@@ -1,0 +1,6 @@
+    if o.{{.PropName}} != nil {
+        result = append(
+            result, 
+            {{.PackFn}}(*o.{{.PropName}}, {{.Pos}}, {{.Divider}}),
+        )
+    }

@@ -1,0 +1,6 @@
+func (o *{{.StructName}}) Get{{.PropName}}() {{.Type}} {
+    return o.{{.PropName}}
+}
+func (o *{{.StructName}}) Set{{.PropName}}(v {{.Type}}) {
+    o.{{.PropName}} = v
+}

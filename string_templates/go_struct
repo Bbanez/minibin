@@ -1,0 +1,80 @@
+package minibin
+
+
+import (
+	"encoding/json"
+	"fmt"
+	"strings"
+	"strconv"
+)
+
+type {{.StructName}} struct {
+{{.StructFields}}
+}
+
+func New{{.StructName}}(
+{{.StructFieldsInitParams}}
+) *{{.StructName}} {
+    return &{{.StructName}}{
+{{.StructFieldsInit}}
+    }
+}
+
+{{.GettersSetters}}
+
+func {{.StructName}}FromJson(jsonStr string) (*{{.StructName}}, error) {
+    result := {{.StructName}}{}
+    err := json.Unmarshal([]byte(jsonStr), &result)
+    if err != nil {
+        return nil, err
+    }
+    return &result, nil
+}
+
+func (o *{{.StructName}}) ToJson() string {
+    result := []string{}
+{{.ToJsonFnBody}}
+    return "{" + strings.Join(result, ",") + "}"
+}
+
+func (o *{{.StructName}}) SetPropAtPos(pos int, v any, level string) error {
+    switch pos {
+{{.SetPropAtPosCases}}
+    default:
+        return fmt.Errorf(
+            "unknown property position %d for %s", 
+            pos, level,
+        )
+    }
+}
+
+func (o *{{.StructName}}) GetPropNameAtPos(pos int) string {
+    switch pos {
+{{.GetPropNameAtPosCases}}
+    }
+}
+
+func (o *{{.StructName}}) Pack() []byte {
+    result := []byte{}
+{{.PackFnBody}}
+    return result
+}
+
+func {{.StructName}}Unpack(b []byte, level *string) (*{{.StructName}}, error) {
+    if level == nil {
+        l := "{{.StructName}}"
+        level = &l
+    }
+    result := {{.StructName}}{}
+    err := unpack(&result, b, *level, strings.Count(*level, "."))
+    if err != nil {
+       return nil, err
+    }
+    return &result, nil
+}
+
+func (o *{{.StructName}}) Copy() *{{.StructName}} {
+    return &{{.StructName}}{
+{{.CopyFnFields}}
+    }
+}

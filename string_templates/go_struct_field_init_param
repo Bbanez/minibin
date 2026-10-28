@@ -1,0 +1,1 @@
+    {{.PropName}}{{.TypeIndent}}{{.CommentIndent}}{{.Comment}}

@@ -1,0 +1,8 @@
+    {
+        for k, v := range o.{{.PropName}} {
+            result = append(
+                result, 
+                PackHMap(k, {{.PackFn}}(v{{.MethodCall}}, 0{{.Divider}}), 1)...,
+            )
+        }
+    }

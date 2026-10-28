@@ -94,7 +94,7 @@ func Parse(schemas []*schema.Schema, args *utils.Args) []*p.ParserOutputItem {
 	for i := range schemas {
 		sch := schemas[i]
 		if sch.Props != nil {
-			outputItems = append(outputItems, parseObject(sch, args))
+			outputItems = append(outputItems, parseObjectV2(sch, args))
 		} else if sch.Enums != nil {
 			outputItems = append(outputItems, parseEnum(sch, args))
 		} else {
@@ -175,6 +175,9 @@ func parseEnum(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 	return &output
 }
 
+// Function will be removed in the future. Use parseObjectV2 instead.
+//
+// Deprecated: This function is deprecated and will be removed in the future. Use parseObjectV2 instead.
 func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 	if !validGoIdentifier(sch.PascalName) {
 		panic(fmt.Errorf("invalid Go schema name %q in %s", sch.Name, sch.RPath))
@@ -186,7 +189,7 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 	goNames := make(map[string]struct{}, len(sch.Props))
 	oStruct := "type " + sch.PascalName + " struct {\n"
 	fns := ""
-	toJsonFn := fmt.Sprintf("\nfunc (o *%s) ToJson() string {\n    result := []string{}\n", sch.PascalName)
+	toJsonFn := ""
 	packFn := fmt.Sprintf(
 		"\n"+
 			"func (o *%s) Pack() []byte {\n    result := []byte{}\n",
@@ -341,10 +344,6 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 		if prop.JsonName != nil {
 			jsonKey = *prop.JsonName
 		}
-		var reqArrStr string
-		var reqStr string
-		var optArrStr string
-		var optStr string
 		switch prop.Typ {
 		case "string":
 			if prop.Array {
@@ -702,89 +701,49 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			}
 			return
 		case "hmap":
+			formatValueFn := ""
+			methodCall := ""
+			switch *prop.HMapTyp {
+			case "string":
+				formatValueFn = "jsonQuote"
+			case "i32", "i64", "u32", "u64", "f32", "f64", "bool":
+				formatValueFn = "numToStr"
+			case "enum":
+				formatValueFn = "jsonQuote"
+				methodCall = ".ToStr()"
+			case "object":
+				methodCall = ".ToJson()"
+			}
 			if prop.Array {
 				if prop.Required {
 					toJsonFn += string_templates.GoToJsonPrimitiveArr(
 						prop.GoName,
 						jsonKey,
-						"bytesSliceToStringSlice",
+						"hmapSliceToStringSlice",
 					)
 				} else {
 					toJsonFn += string_templates.GoToJsonPrimitiveArr(
 						prop.GoName,
 						jsonKey,
-						"bytesSliceToStringSliceRef",
+						"hmapSliceToStringSliceRef",
 					)
 				}
 			} else {
 				if prop.Required {
-					toJsonFn += string_templates.GoToJsonBytesReq(
+					toJsonFn += string_templates.GoToJsonHmapReq(
+						formatValueFn,
 						prop.GoName,
-						jsonKey,
+						methodCall,
 					)
 				} else {
-					toJsonFn += string_templates.GoToJsonBytesOpt(
+					toJsonFn += string_templates.GoToJsonHmapOpt(
+						formatValueFn,
 						prop.GoName,
-						jsonKey,
+						methodCall,
 					)
 				}
 			}
 			return
-			// TODO: Implement HMap JSON serialization logic
-			reqArrStr = fmt.Sprintf(""+
-				"\" + strings.Join(objSliceToStringSlice(o.%s), \",\") + \"",
-				prop.GoName,
-			)
-			reqStr = "\"{}\""
-			// reqStr = fmt.Sprintf("o.%s.ToJson()", prop.GoName)
-			optArrStr = fmt.Sprintf(""+
-				"\" + strings.Join(objSliceToStringSlice(o.%s), \",\") + \"",
-				prop.GoName,
-			)
-			optStr = "\"{}\""
-			// optStr = fmt.Sprintf("(*o.%s).ToJson()", prop.GoName)
-		}
-
-		if prop.Required {
-			if prop.Array {
-				toJsonFn += fmt.Sprintf(""+
-					"    if len(o.%s) > 0 {\n"+
-					"        result = append(result, %s + \"[\" + %s + \"]\")\n"+
-					"    } else {\n"+
-					"        result = append(result, %s + \"[]\")\n"+
-					"    }\n"+
-					"",
-					prop.GoName, jsonKey, reqArrStr, jsonKey,
-				)
-			} else {
-				toJsonFn += fmt.Sprintf(""+
-					"    result = append(result, %s + %s)\n",
-					jsonKey, reqStr,
-				)
-			}
-		} else {
-			toJsonFn += fmt.Sprintf(""+
-				"    if o.%s != nil {\n"+
-				"    ",
-				prop.GoName,
-			)
-			if prop.Array {
-				toJsonFn += fmt.Sprintf(""+
-					"        if len(o.%s) > 0 {\n"+
-					"            result = append(result, %s + \"[\" + %s + \"]\")\n"+
-					"        } else {\n"+
-					"            result = append(result, %s + \"[]\")\n"+
-					"        }\n"+
-					"",
-					prop.GoName, jsonKey, optArrStr, jsonKey,
-				)
-			} else {
-				toJsonFn += fmt.Sprintf(""+
-					"        result = append(result, %s + %s)\n",
-					jsonKey, optStr,
-				)
-			}
-			toJsonFn += "    }\n"
 		}
 	}
 	_ = toJsonWrapper
@@ -1117,7 +1076,31 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 				}
 				typ += goRefType(prop.Ref, fmt.Sprintf("%s.props[%d]", sch.RPath, i))
 			} else {
-				typ += *prop.HMapTyp
+				switch *prop.HMapTyp {
+				case "string":
+					typ += "string"
+				case "i32":
+					typ += "int32"
+				case "i64":
+					typ += "int64"
+				case "u32":
+					typ += "uint32"
+				case "u64":
+					typ += "uint64"
+				case "f32":
+					typ += "float32"
+				case "f64":
+					typ += "float64"
+				case "bool":
+					typ += "bool"
+				case "bytes":
+					typ += "[]byte"
+				default:
+					panic(fmt.Errorf(
+						"Invalid HMap value type '%s' found in: %s.props[%d]",
+						*prop.HMapTyp, sch.RPath, i,
+					))
+				}
 			}
 			// TODO: Implement HMap copy, pack, and set property logic
 			// panic("HMap copy, pack, and set property logic not implemented yet")
@@ -1280,7 +1263,10 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 		"",
 		sch.PascalName, sch.PascalName, sch.PascalName,
 	)
-	toJsonFn += "    return \"{\" + strings.Join(result, \",\") + \"}\"\n}\n"
+	toJsonFn = string_templates.GoToJsonFnWrapper(
+		sch.PascalName,
+		toJsonFn,
+	)
 	setPropFn += fmt.Sprintf(
 		"" +
 			"    default:\n" +
@@ -1368,4 +1354,166 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 	output.Content = "package minibin\n\n" + importPacks
 	output.Content += oStruct + newFn + fns + toJsonFn + setPropFn + getPropNameFn + packFn + unpackFn + copyFn
 	return &output
+}
+
+func parseObjectV2(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
+	structName := sch.PascalName
+	copyFnFields := []string{}
+	getPropNameAtPosCases := []string{}
+	gettersSetters := []string{}
+	packFnBody := ""
+	setPropAtPosCases := []string{}
+	structFields := []string{}
+	structFieldsInit := []string{}
+	structFieldsInitParams := []string{}
+	toJsonBody := ""
+	goNames := make(map[string]struct{}, len(sch.Props))
+
+	longestNameLen := 1
+	longestTypeLen := 1
+	for i, prop := range sch.Props {
+		if !validGoIdentifier(prop.GoName) {
+			panic(
+				fmt.Errorf(
+					"invalid Go property name %q in %s.props[%d]",
+					prop.Name, sch.RPath, i,
+				),
+			)
+		}
+		if !validGoIdentifier(prop.Name) {
+			panic(
+				fmt.Errorf(
+					"invalid Go constructor parameter %q in %s.props[%d]",
+					prop.Name, sch.RPath, i,
+				),
+			)
+		}
+		if _, exists := goNames[prop.GoName]; exists {
+			panic(
+				fmt.Errorf(
+					"duplicate Go property name %q in %s",
+					prop.GoName, sch.RPath,
+				),
+			)
+		}
+		goNames[prop.GoName] = struct{}{}
+		if !validSchemaText(prop.Desc) ||
+			(prop.BsonName != nil && (!validSchemaText(*prop.BsonName) ||
+				strings.ContainsAny(*prop.BsonName, "\\\""))) {
+			panic(
+				fmt.Errorf(
+					"invalid description or BSON name in %s.props[%d]",
+					sch.RPath, i,
+				),
+			)
+		}
+		typ := miniTypToGoTyp(prop.Typ, prop.HMapTyp, prop.Ref)
+		if len(prop.GoName) > longestNameLen {
+			longestNameLen = len(prop.GoName)
+		}
+		if len(typ) > longestTypeLen {
+			longestTypeLen = len(typ)
+		}
+	}
+
+	for i, prop := range sch.Props {
+		typ := miniTypToGoTyp(prop.Typ, prop.HMapTyp, prop.Ref)
+		switch prop.Typ {
+		case "string":
+			copyFnFields = append(
+				copyFnFields,
+			)
+			gettersSetters = append(
+				gettersSetters,
+				string_templates.GoStructPropGetSet(
+					prop.GoName,
+					sch.PascalName,
+					typ,
+				),
+			)
+		}
+	}
+
+	structData := string_templates.GoStruct(
+		strings.Join(copyFnFields, ",\n"),
+		strings.Join(getPropNameAtPosCases, "\n"),
+		strings.Join(gettersSetters, "\n\n"),
+		packFnBody,
+		strings.Join(setPropAtPosCases, "\n"),
+		strings.Join(structFields, "\n"),
+		strings.Join(structFieldsInit, "\n"),
+		strings.Join(structFieldsInitParams, ",\n"),
+		structName,
+		toJsonBody,
+	)
+	output := p.ParserOutputItem{}
+	output.Path = strings.ReplaceAll(sch.RPath, ".", "_")
+	output.Path = strings.ReplaceAll(output.Path, "/", "_")
+	output.Path = strings.ReplaceAll(output.Path, "-", "_")
+	output.Path = "obj_" + output.Path + ".go"
+	output.Content = structData
+	return &output
+}
+
+func miniTypToGoTyp(miniTyp string, hmapTyp *string, ref *string) string {
+	switch miniTyp {
+	case "string":
+		return "string"
+	case "i32":
+		return "int32"
+	case "i64":
+		return "int64"
+	case "u32":
+		return "uint32"
+	case "u64":
+		return "uint64"
+	case "f32":
+		return "float32"
+	case "f64":
+		return "float64"
+	case "bool":
+		return "bool"
+	case "enum", "object":
+		if ref == nil {
+			panic(fmt.Errorf("ref is nil for type %s", miniTyp))
+		}
+		return goRefType(ref, "")
+	case "bytes":
+		return "[]byte"
+	case "hmap":
+		if hmapTyp == nil {
+			panic(fmt.Errorf("hmapTyp is nil for type %s", miniTyp))
+		}
+		typ := "map[string]"
+		switch *hmapTyp {
+		case "string":
+			typ += "string"
+		case "i32":
+			typ += "int32"
+		case "i64":
+			typ += "int64"
+		case "u32":
+			typ += "uint32"
+		case "u64":
+			typ += "uint64"
+		case "f32":
+			typ += "float32"
+		case "f64":
+			typ += "float64"
+		case "bool":
+			typ += "bool"
+		case "bytes":
+			typ += "[]byte"
+		case "enum", "object":
+			if ref == nil {
+				panic(fmt.Errorf("ref is nil for type %s", miniTyp))
+			}
+			typ += goRefType(ref, "")
+		default:
+			panic(fmt.Errorf("invalid hmapTyp: %s", *hmapTyp))
+		}
+		return typ
+	default:
+		panic(fmt.Errorf("invalid miniTyp: %s", miniTyp))
+	}
 }

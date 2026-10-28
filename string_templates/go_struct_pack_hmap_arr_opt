@@ -1,0 +1,15 @@
+    {
+        arr := []string{}
+        for i := range o.{{.PropName}} {
+            for k, v := range *o.{{.PropName}} {
+                arr = append(
+                    arr, 
+                    PackHMap(k, {{.PackFn}}(v{{.MethodCall}}, 0{{.Divider}}), 1)...,
+                )
+            }
+        }
+        result = append(
+            result, 
+            "[" + strings.Join(arr, ",") + "]",
+        )
+    }

@@ -52,11 +52,25 @@
                 "array": false
             },
             {
-                "name": "i64o",
+                "name": "u32o",
                 "typ": "hmap",
-                "hmapTyp": "i64",
+                "hmapTyp": "u32",
                 "required": false,
                 "array": false
+            },
+            {
+                "name": "u32a",
+                "typ": "hmap",
+                "hmapTyp": "u32",
+                "required": true,
+                "array": true
+            },
+            {
+                "name": "u32ao",
+                "typ": "hmap",
+                "hmapTyp": "u32",
+                "required": false,
+                "array": true
             }
         ]
     }

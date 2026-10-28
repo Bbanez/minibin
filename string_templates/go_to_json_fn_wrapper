@@ -1,0 +1,5 @@
+func (o *{{.GoStructName}}) ToJson() string {
+    result := []string{}
+{{.ToJsonFnBody}}
+    return "{" + strings.Join(result, ",") + "}"
+}
