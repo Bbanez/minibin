@@ -1,0 +1,6 @@
+    result = append(
+        result, 
+        "\"{{.JsonPropName}}\": ["+
+        strings.Join(bytesToStringSlice(o.{{.GoPropName}}), ",")+
+        "]",
+    )

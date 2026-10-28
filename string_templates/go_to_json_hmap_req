@@ -1,0 +1,11 @@
+    keyValues := []string{}
+    for k, v := range o.{{.GoPropName}} {
+        keyValues = append(
+            keyValues,
+            "\"" + k + "\":" + {{.FormatValueFn}}(v{{.MethodCall}}),
+        )
+    }
+    result = append(
+        result,
+        "\"st\":{" + strings.Join(keyValues, ",") + "}",
+    )

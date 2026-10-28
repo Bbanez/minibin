@@ -1,0 +1,7 @@
+    if o.{{.GoPropName}} != nil {
+        result = append(
+            result, 
+            "\"{{.JsonPropName}}\":"+
+            o.{{.GoPropName}}.ToJson(),
+        )
+    }

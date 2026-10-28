@@ -1,6 +1,7 @@
-package tools
+package main
 
 import (
+	"sort"
 	"strings"
 
 	"github.com/bbanez/minibin/src/utils"
@@ -20,11 +21,10 @@ func GenerateGoStringTemplates() {
 		if data.Error != nil {
 			panic(data.Error)
 		}
-		vars := utils.AllTextBetween(data.Value, "{{.", "}}")
-		varsMap := map[string]string{}
-		for _, v := range vars {
-			varsMap[v] = v
-		}
+		vars := utils.KeepUniqueStrings(
+			utils.AllTextBetween(data.Value, "{{.", "}}"),
+		)
+		sort.Strings(vars)
 		fileName := strings.ReplaceAll(
 			strings.ReplaceAll(file.RelPath, "/", "_"),
 			".",
@@ -39,13 +39,13 @@ func GenerateGoStringTemplates() {
 		fn := "package string_templates\n\n" +
 			"func " + fnName + "(\n"
 		mutatedData := data.Value
-		for k := range varsMap {
+		for _, k := range vars {
 			mutatedData = strings.ReplaceAll(mutatedData, "{{."+k+"}}", "` + "+k+" + `")
 			fn += "    " + k + " string,\n"
 		}
 		fn += ") string {\n" +
-			"    return `\n" + mutatedData +
-			"\n`\n}\n"
+			"    return `" + mutatedData +
+			"`\n}\n"
 		fs.Write([]byte(fn), "src", "string_templates", fileName).Unwrap()
 	}
 }

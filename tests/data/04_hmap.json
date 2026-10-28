@@ -1,29 +1,62 @@
 [
     {
-        "name": "KV",
-        "props": [
-            {
-                "name": "key",
-                "typ": "string",
-                "hmapTyp": "string",
-                "required": true
-            },
-            {
-                "name": "value",
-                "typ": "bytes",
-                "hmapTyp": "string",
-                "required": true
-            }
-        ]
-    },
-    {
         "name": "HMapTest",
         "props": [
             {
                 "name": "st",
                 "typ": "hmap",
                 "hmapTyp": "string",
-                "required": false
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "sto",
+                "typ": "hmap",
+                "hmapTyp": "string",
+                "required": false,
+                "array": false
+            },
+            {
+                "name": "i32",
+                "typ": "hmap",
+                "hmapTyp": "i32",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "i32o",
+                "typ": "hmap",
+                "hmapTyp": "i32",
+                "required": false,
+                "array": false
+            },
+            {
+                "name": "i64",
+                "typ": "hmap",
+                "hmapTyp": "i64",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "i64o",
+                "typ": "hmap",
+                "hmapTyp": "i64",
+                "required": false,
+                "array": false
+            },
+            {
+                "name": "u32",
+                "typ": "hmap",
+                "hmapTyp": "u32",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "i64o",
+                "typ": "hmap",
+                "hmapTyp": "i64",
+                "required": false,
+                "array": false
             }
         ]
     }

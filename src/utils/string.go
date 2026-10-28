@@ -238,6 +238,18 @@ func (ss *StringSlice) Get() *[]string {
 	return &ss.s
 }
 
+func KeepUniqueStrings(s []string) []string {
+	m := map[string]bool{}
+	for _, str := range s {
+		m[str] = true
+	}
+	out := []string{}
+	for str := range m {
+		out = append(out, str)
+	}
+	return out
+}
+
 // ----------------------------------------------------------------------------
 // --- String Object
 // ----------------------------------------------------------------------------

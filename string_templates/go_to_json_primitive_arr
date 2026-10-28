@@ -1,0 +1,16 @@
+    if len(o.{{.GoPropName}}) > 0 {
+        result = append(
+            result, 
+            "\"{{.JsonPropName}}\": ["+
+            strings.Join(
+                {{.SliceFnName}}(o.{{.GoPropName}}),
+                ",",
+            )+
+            "]",
+        )
+    } else {
+        result = append(
+            result, 
+            "\"{{.JsonPropName}}\": []",
+        )
+    }

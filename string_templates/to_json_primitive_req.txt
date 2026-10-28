@@ -1,5 +1,0 @@
-result = append(
-    result, 
-    "\"{{.PropName}}\":"+
-    jsonQuote(o.{{.PropValue}}),
-)

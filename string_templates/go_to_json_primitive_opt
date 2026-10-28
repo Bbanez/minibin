@@ -1,0 +1,7 @@
+    if o.{{.GoPropName}} != nil {
+        result = append(
+            result, 
+            "\"{{.JsonPropName}}\":"+
+            {{.FormatValueFn}}(*o.{{.GoPropName}}{{.MethodCall}}),
+        )
+    }

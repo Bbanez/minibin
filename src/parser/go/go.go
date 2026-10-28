@@ -8,6 +8,7 @@ import (
 
 	p "github.com/bbanez/minibin/src/parser"
 	"github.com/bbanez/minibin/src/schema"
+	"github.com/bbanez/minibin/src/string_templates"
 	"github.com/bbanez/minibin/src/utils"
 )
 
@@ -336,7 +337,7 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 
 	importStrconv := true
 	toJsonWrapper := func(prop *schema.SchemaProp) {
-		jsonKey := goString("\"" + prop.Name + "\":")
+		jsonKey := prop.Name
 		if prop.JsonName != nil {
 			jsonKey = *prop.JsonName
 		}
@@ -346,117 +347,360 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 		var optStr string
 		switch prop.Typ {
 		case "string":
-			reqArrStr = fmt.Sprintf("strings.Join(quoteStrings(o.%s), \",\")", prop.GoName)
-			reqStr = "jsonQuote(o." + prop.GoName + ")"
-			optArrStr = fmt.Sprintf("strings.Join(quoteStringPointers(o.%s), \",\")", prop.GoName)
-			optStr = "jsonQuote(*o." + prop.GoName + ")"
+			if prop.Array {
+				if prop.Required {
+					toJsonFn += string_templates.GoToJsonPrimitiveArr(
+						prop.GoName,
+						jsonKey,
+						"quoteStrings",
+					)
+				} else {
+					toJsonFn += string_templates.GoToJsonPrimitiveArr(
+						prop.GoName,
+						jsonKey,
+						"quoteStringPointers",
+					)
+				}
+			} else {
+				if prop.Required {
+					toJsonFn += string_templates.GoToJsonPrimitiveReq(
+						"jsonQuote",
+						prop.GoName,
+						jsonKey,
+						"",
+					)
+				} else {
+					toJsonFn += string_templates.GoToJsonPrimitiveOpt(
+						"jsonQuote",
+						prop.GoName,
+						jsonKey,
+						"",
+					)
+				}
+			}
+			return
 		case "i32":
-			reqArrStr = fmt.Sprintf("\" + strings.Join(int32SliceToStringSlice(o.%s), \",\") + \"", prop.GoName)
-			reqStr = fmt.Sprintf("strconv.FormatInt(int64(o.%s), 10)", prop.GoName)
-			optArrStr = fmt.Sprintf("\" + strings.Join(int32SliceToStringSliceRef(o.%s), \",\") + \"", prop.GoName)
-			optStr = fmt.Sprintf("strconv.FormatInt(int64(*o.%s), 10)", prop.GoName)
-			if !prop.Array {
-				importStrconv = true
+			if prop.Array {
+				if prop.Required {
+					toJsonFn += string_templates.GoToJsonPrimitiveArr(
+						prop.GoName,
+						jsonKey,
+						"int32SliceToStringSlice",
+					)
+				} else {
+					toJsonFn += string_templates.GoToJsonPrimitiveArr(
+						prop.GoName,
+						jsonKey,
+						"int32SliceToStringSliceRef",
+					)
+				}
+			} else {
+				if prop.Required {
+					toJsonFn += string_templates.GoToJsonPrimitiveReq(
+						"numToStr",
+						prop.GoName,
+						jsonKey,
+						"",
+					)
+				} else {
+					toJsonFn += string_templates.GoToJsonPrimitiveOpt(
+						"numToStr",
+						prop.GoName,
+						jsonKey,
+						"",
+					)
+				}
 			}
+			return
 		case "i64":
-			reqArrStr = fmt.Sprintf("\" + strings.Join(int64SliceToStringSlice(o.%s), \",\") + \"", prop.GoName)
-			reqStr = fmt.Sprintf("strconv.FormatInt(o.%s, 10)", prop.GoName)
-			optArrStr = fmt.Sprintf("\" + strings.Join(int64SliceToStringSliceRef(o.%s), \",\") + \"", prop.GoName)
-			optStr = fmt.Sprintf("strconv.FormatInt(*o.%s, 10)", prop.GoName)
-			if !prop.Array {
-				importStrconv = true
+			if prop.Array {
+				if prop.Required {
+					toJsonFn += string_templates.GoToJsonPrimitiveArr(
+						prop.GoName,
+						jsonKey,
+						"int64SliceToStringSlice",
+					)
+				} else {
+					toJsonFn += string_templates.GoToJsonPrimitiveArr(
+						prop.GoName,
+						jsonKey,
+						"int64SliceToStringSliceRef",
+					)
+				}
+			} else {
+				if prop.Required {
+					toJsonFn += string_templates.GoToJsonPrimitiveReq(
+						"numToStr",
+						prop.GoName,
+						jsonKey,
+						"",
+					)
+				} else {
+					toJsonFn += string_templates.GoToJsonPrimitiveOpt(
+						"numToStr",
+						prop.GoName,
+						jsonKey,
+						"",
+					)
+				}
 			}
+			return
 		case "u32":
-			reqArrStr = fmt.Sprintf("\" + strings.Join(uint32SliceToStringSlice(o.%s), \",\") + \"", prop.GoName)
-			reqStr = fmt.Sprintf("strconv.FormatUint(uint64(o.%s), 10)", prop.GoName)
-			optArrStr = fmt.Sprintf("\" + strings.Join(uint32SliceToStringSliceRef(o.%s), \",\") + \"", prop.GoName)
-			optStr = fmt.Sprintf("strconv.FormatUint(uint64(*o.%s), 10)", prop.GoName)
-			if !prop.Array {
-				importStrconv = true
+			if prop.Array {
+				if prop.Required {
+					toJsonFn += string_templates.GoToJsonPrimitiveArr(
+						prop.GoName,
+						jsonKey,
+						"uint32SliceToStringSlice",
+					)
+				} else {
+					toJsonFn += string_templates.GoToJsonPrimitiveArr(
+						prop.GoName,
+						jsonKey,
+						"uint32SliceToStringSliceRef",
+					)
+				}
+			} else {
+				if prop.Required {
+					toJsonFn += string_templates.GoToJsonPrimitiveReq(
+						"numToStr",
+						prop.GoName,
+						jsonKey,
+						"",
+					)
+				} else {
+					toJsonFn += string_templates.GoToJsonPrimitiveOpt(
+						"numToStr",
+						prop.GoName,
+						jsonKey,
+						"",
+					)
+				}
 			}
+			return
 		case "u64":
-			reqArrStr = fmt.Sprintf("\" + strings.Join(uint64SliceToStringSlice(o.%s), \",\") + \"", prop.GoName)
-			reqStr = fmt.Sprintf("strconv.FormatUint(o.%s, 10)", prop.GoName)
-			optArrStr = fmt.Sprintf("\" + strings.Join(uint64SliceToStringSliceRef(o.%s), \",\") + \"", prop.GoName)
-			optStr = fmt.Sprintf("strconv.FormatUint(*o.%s, 10)", prop.GoName)
-			if !prop.Array {
-				importStrconv = true
+			if prop.Array {
+				if prop.Required {
+					toJsonFn += string_templates.GoToJsonPrimitiveArr(
+						prop.GoName,
+						jsonKey,
+						"uint64SliceToStringSlice",
+					)
+				} else {
+					toJsonFn += string_templates.GoToJsonPrimitiveArr(
+						prop.GoName,
+						jsonKey,
+						"uint64SliceToStringSliceRef",
+					)
+				}
+			} else {
+				if prop.Required {
+					toJsonFn += string_templates.GoToJsonPrimitiveReq(
+						"numToStr",
+						prop.GoName,
+						jsonKey,
+						"",
+					)
+				} else {
+					toJsonFn += string_templates.GoToJsonPrimitiveOpt(
+						"numToStr",
+						prop.GoName,
+						jsonKey,
+						"",
+					)
+				}
 			}
+			return
 		case "f32":
-			reqArrStr = fmt.Sprintf(""+
-				"\" + strings.Join(float32SliceToStringSlice(o.%s), \",\") + \"",
-				prop.GoName,
-			)
-			reqStr = fmt.Sprintf("strconv.FormatFloat(float64(o.%s), 'f', -1, 32)", prop.GoName)
-			optArrStr = fmt.Sprintf(""+
-				"\" + strings.Join(float32SliceToStringSliceRef(o.%s), \",\") + \"",
-				prop.GoName,
-			)
-			optStr = fmt.Sprintf("strconv.FormatFloat(float64(*o.%s), 'f', -1, 32)", prop.GoName)
-			if !prop.Array {
-				importStrconv = true
+			if prop.Array {
+				if prop.Required {
+					toJsonFn += string_templates.GoToJsonPrimitiveArr(
+						prop.GoName,
+						jsonKey,
+						"float32SliceToStringSlice",
+					)
+				} else {
+					toJsonFn += string_templates.GoToJsonPrimitiveArr(
+						prop.GoName,
+						jsonKey,
+						"float32SliceToStringSliceRef",
+					)
+				}
+			} else {
+				if prop.Required {
+					toJsonFn += string_templates.GoToJsonPrimitiveReq(
+						"numToStr",
+						prop.GoName,
+						jsonKey,
+						"",
+					)
+				} else {
+					toJsonFn += string_templates.GoToJsonPrimitiveOpt(
+						"numToStr",
+						prop.GoName,
+						jsonKey,
+						"",
+					)
+				}
 			}
+			return
 		case "f64":
-			reqArrStr = fmt.Sprintf(""+
-				"\" + strings.Join(float64SliceToStringSlice(o.%s), \",\") + \"",
-				prop.GoName,
-			)
-			reqStr = fmt.Sprintf("strconv.FormatFloat(o.%s, 'f', -1, 64)", prop.GoName)
-			optArrStr = fmt.Sprintf(""+
-				"\" + strings.Join(float64SliceToStringSliceRef(o.%s), \",\") + \"",
-				prop.GoName,
-			)
-			optStr = fmt.Sprintf("strconv.FormatFloat(*o.%s, 'f', -1, 64)", prop.GoName)
-			if !prop.Array {
-				importStrconv = true
+			if prop.Array {
+				if prop.Required {
+					toJsonFn += string_templates.GoToJsonPrimitiveArr(
+						prop.GoName,
+						jsonKey,
+						"float64SliceToStringSlice",
+					)
+				} else {
+					toJsonFn += string_templates.GoToJsonPrimitiveArr(
+						prop.GoName,
+						jsonKey,
+						"float64SliceToStringSliceRef",
+					)
+				}
+			} else {
+				if prop.Required {
+					toJsonFn += string_templates.GoToJsonPrimitiveReq(
+						"numToStr",
+						prop.GoName,
+						jsonKey,
+						"",
+					)
+				} else {
+					toJsonFn += string_templates.GoToJsonPrimitiveOpt(
+						"numToStr",
+						prop.GoName,
+						jsonKey,
+						"",
+					)
+				}
 			}
+			return
 		case "bool":
-			reqArrStr = fmt.Sprintf(""+
-				"\" + strings.Join(boolSliceToStringSlice(o.%s), \",\") + \"",
-				prop.GoName,
-			)
-			reqStr = fmt.Sprintf("strconv.FormatBool(o.%s)", prop.GoName)
-			optArrStr = fmt.Sprintf(""+
-				"\" + strings.Join(boolSliceToStringSliceRef(o.%s), \",\") + \"",
-				prop.GoName,
-			)
-			optStr = fmt.Sprintf("strconv.FormatBool(*o.%s)", prop.GoName)
-			if !prop.Array {
-				importStrconv = true
+			if prop.Array {
+				if prop.Required {
+					toJsonFn += string_templates.GoToJsonPrimitiveArr(
+						prop.GoName,
+						jsonKey,
+						"boolSliceToStringSlice",
+					)
+				} else {
+					toJsonFn += string_templates.GoToJsonPrimitiveArr(
+						prop.GoName,
+						jsonKey,
+						"boolSliceToStringSliceRef",
+					)
+				}
+			} else {
+				if prop.Required {
+					toJsonFn += string_templates.GoToJsonPrimitiveReq(
+						"numToStr",
+						prop.GoName,
+						jsonKey,
+						"",
+					)
+				} else {
+					toJsonFn += string_templates.GoToJsonPrimitiveOpt(
+						"numToStr",
+						prop.GoName,
+						jsonKey,
+						"",
+					)
+				}
 			}
+			return
 		case "enum":
-			reqArrStr = fmt.Sprintf(""+
-				"strings.Join(enumSliceToJSONStringSlice(o.%s), \",\")",
-				prop.GoName,
-			)
-			reqStr = fmt.Sprintf("jsonQuote(o.%s.ToStr())", prop.GoName)
-			optArrStr = fmt.Sprintf(""+
-				"strings.Join(enumSliceToJSONStringSlice(o.%s), \",\")",
-				prop.GoName,
-			)
-			optStr = fmt.Sprintf("jsonQuote((*o.%s).ToStr())", prop.GoName)
+			if prop.Array {
+				if prop.Required {
+					toJsonFn += string_templates.GoToJsonPrimitiveArr(
+						prop.GoName,
+						jsonKey,
+						"enumSliceToStringSlice",
+					)
+				} else {
+					toJsonFn += string_templates.GoToJsonPrimitiveArr(
+						prop.GoName,
+						jsonKey,
+						"enumSliceToStringSliceRef",
+					)
+				}
+			} else {
+				if prop.Required {
+					toJsonFn += string_templates.GoToJsonPrimitiveReq(
+						"jsonQuote",
+						prop.GoName,
+						jsonKey,
+						".ToStr()",
+					)
+				} else {
+					toJsonFn += string_templates.GoToJsonPrimitiveOpt(
+						"jsonQuote",
+						prop.GoName,
+						jsonKey,
+						".ToStr()",
+					)
+				}
+			}
+			return
 		case "object":
-			reqArrStr = fmt.Sprintf(""+
-				"strings.Join(objSliceToStringSlice(o.%s), \",\")",
-				prop.GoName,
-			)
-			reqStr = fmt.Sprintf("o.%s.ToJson()", prop.GoName)
-			optArrStr = fmt.Sprintf(""+
-				"strings.Join(objSliceToStringSlice(o.%s), \",\")",
-				prop.GoName,
-			)
-			optStr = fmt.Sprintf("(*o.%s).ToJson()", prop.GoName)
+			if prop.Array {
+				if prop.Required {
+					toJsonFn += string_templates.GoToJsonPrimitiveArr(
+						prop.GoName,
+						jsonKey,
+						"objSliceToStringSlice",
+					)
+				} else {
+					toJsonFn += string_templates.GoToJsonPrimitiveArr(
+						prop.GoName,
+						jsonKey,
+						"objSliceToStringSlice",
+					)
+				}
+			} else {
+				if prop.Required {
+					toJsonFn += string_templates.GoToJsonObjReq(
+						prop.GoName,
+						jsonKey,
+					)
+				} else {
+					toJsonFn += string_templates.GoToJsonObjOpt(
+						prop.GoName,
+						jsonKey,
+					)
+				}
+			}
+			return
 		case "bytes":
-			reqArrStr = fmt.Sprintf(""+
-				"strings.Join(bytesSliceToStringSlice(o.%s), \",\")",
-				prop.GoName,
-			)
-			reqStr = fmt.Sprintf("\"[\" + strings.Join(bytesToStringSlice(o.%s), \",\") + \"]\"", prop.GoName)
-			optArrStr = fmt.Sprintf(""+
-				"\" + strings.Join(bytesSliceToStringSliceRef(o.%s), \",\") + \"",
-				prop.GoName,
-			)
-			optStr = fmt.Sprintf("\"[\" + strings.Join(bytesToStringSlice(*o.%s), \",\") + \"]\"", prop.GoName)
+			if prop.Array {
+				if prop.Required {
+					toJsonFn += string_templates.GoToJsonPrimitiveArr(
+						prop.GoName,
+						jsonKey,
+						"bytesSliceToStringSlice",
+					)
+				} else {
+					toJsonFn += string_templates.GoToJsonPrimitiveArr(
+						prop.GoName,
+						jsonKey,
+						"bytesSliceToStringSliceRef",
+					)
+				}
+			} else {
+				if prop.Required {
+					toJsonFn += string_templates.GoToJsonBytesReq(
+						prop.GoName,
+						jsonKey,
+					)
+				} else {
+					toJsonFn += string_templates.GoToJsonBytesOpt(
+						prop.GoName,
+						jsonKey,
+					)
+				}
+			}
+			return
 		case "hmap":
 			// TODO: Implement HMap JSON serialization logic
 			reqArrStr = fmt.Sprintf(""+
