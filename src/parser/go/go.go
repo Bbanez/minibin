@@ -702,6 +702,34 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			}
 			return
 		case "hmap":
+			if prop.Array {
+				if prop.Required {
+					toJsonFn += string_templates.GoToJsonPrimitiveArr(
+						prop.GoName,
+						jsonKey,
+						"bytesSliceToStringSlice",
+					)
+				} else {
+					toJsonFn += string_templates.GoToJsonPrimitiveArr(
+						prop.GoName,
+						jsonKey,
+						"bytesSliceToStringSliceRef",
+					)
+				}
+			} else {
+				if prop.Required {
+					toJsonFn += string_templates.GoToJsonBytesReq(
+						prop.GoName,
+						jsonKey,
+					)
+				} else {
+					toJsonFn += string_templates.GoToJsonBytesOpt(
+						prop.GoName,
+						jsonKey,
+					)
+				}
+			}
+			return
 			// TODO: Implement HMap JSON serialization logic
 			reqArrStr = fmt.Sprintf(""+
 				"\" + strings.Join(objSliceToStringSlice(o.%s), \",\") + \"",
