@@ -156,6 +156,7 @@ func main() {
 		return
 	}
 	if args.Clear {
+		fmt.Printf("Clearing output directory...")
 		files := fs.ListFiles("")
 		if files.Error != nil {
 			panic(files.Error)

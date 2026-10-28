@@ -75,19 +75,19 @@ func goTagValue(value string) string {
 }
 
 func Parse(schemas []*schema.Schema, args *utils.Args) []*p.ParserOutputItem {
-	schemas = append(schemas, GoOpenApiObjectSchema())
+	schemas = append(schemas, GoOpenApiSchemas()...)
 	outputItems := []*p.ParserOutputItem{
 		{
 			Path:    "minibin__common.go",
 			Content: Common,
 		},
+		// {
+		// 	Path:    "minibin__openapi_model.go",
+		// 	Content: GoOpenApiModel,
+		// },
 		{
-			Path:    "minibin__openapi_model.go",
-			Content: GoOpenApiModel,
-		},
-		{
-			Path:    "minibin__openapi_schema.go",
-			Content: GoOpenApiSchema,
+			Path:    "minibin__openapi_utils.go",
+			Content: GoOpenApiUtils,
 		},
 	}
 	for i := range schemas {
@@ -832,54 +832,63 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			}
 			setPropFn += setPropWrapperNormal(prop.GoName, typ, i, prop.Array, prop.Required)
 		case "hmap":
-			typ = "map[string]" + *prop.HMapTyp
-			if strings.HasPrefix(typ, ".") {
-				typ = "map[string]" + goRefType(prop.Ref, fmt.Sprintf("%s.props[%d]", sch.RPath, i))
+			typ = "map[string]"
+			if *prop.HMapTyp == "object" || *prop.HMapTyp == "enum" {
+				if prop.Ref == nil {
+					panic(fmt.Errorf(
+						"Invalid HMap value type '%s' found in: %s.props[%d]",
+						*prop.HMapTyp, sch.RPath, i,
+					))
+				}
+				typ += goRefType(prop.Ref, fmt.Sprintf("%s.props[%d]", sch.RPath, i))
+			} else {
+				typ += *prop.HMapTyp
 			}
 			// TODO: Implement HMap copy, pack, and set property logic
 			// panic("HMap copy, pack, and set property logic not implemented yet")
 			valuePacker := ""
 			valueUnpacker := ""
-			decimalSpaces := ""
 			decimalDevider := ""
 			switch *prop.HMapTyp {
 			case "string":
-				valuePacker = "PackString"
-				valueUnpacker = "UnpackString"
+				valuePacker = "PackString(v, 0)"
+				valueUnpacker = "UnpackString(v, 2)"
 			case "i32":
-				valuePacker = "PackInt32"
-				valueUnpacker = "UnpackInt32"
+				valuePacker = "PackInt32(v, 0)"
+				valueUnpacker = "UnpackInt32(v, 2)"
 			case "i64":
-				valuePacker = "PackInt64"
-				valueUnpacker = "UnpackInt64"
+				valuePacker = "PackInt64(v, 0)"
+				valueUnpacker = "UnpackInt64(v, 2)"
 			case "u32":
-				valuePacker = "PackUint32"
-				valueUnpacker = "UnpackUint32"
+				valuePacker = "PackUint32(v, 0)"
+				valueUnpacker = "UnpackUint32(v, 2)"
 			case "u64":
-				valuePacker = "PackUint64"
-				valueUnpacker = "UnpackUint64"
+				valuePacker = "PackUint64(v, 0)"
+				valueUnpacker = "UnpackUint64(v, 2)"
 			case "f32":
-				valuePacker = "PackFloat32"
-				valueUnpacker = "UnpackInt32"
-				decimalSpaces = fmt.Sprintf(", %f", prop.Decimals)
+				valuePacker = fmt.Sprintf("PackFloat32(v, 0, %f)",
+					prop.Decimals,
+				)
+				valueUnpacker = "UnpackInt32(v, 2)"
 				decimalDevider = fmt.Sprintf(" / %f", math.Pow(10, float64(prop.Decimals)))
 			case "f64":
-				valuePacker = "PackFloat64"
-				valueUnpacker = "UnpackInt64"
-				decimalSpaces = fmt.Sprintf(", %f", prop.Decimals)
+				valuePacker = fmt.Sprintf("PackFloat64(v, 0, %f)",
+					prop.Decimals,
+				)
+				valueUnpacker = "UnpackInt64(v, 2)"
 				decimalDevider = fmt.Sprintf(" / %f", math.Pow(10, float64(prop.Decimals)))
 			case "bool":
-				valuePacker = "PackBool"
-				valueUnpacker = "UnpackBool"
+				valuePacker = "PackBool(v, 0)"
+				valueUnpacker = "UnpackBool(v, 2)"
 			case "bytes":
-				valuePacker = "PackBytes"
-				valueUnpacker = "UnpackBytes"
+				valuePacker = "PackBytes(v, 0)"
+				valueUnpacker = "UnpackBytes(v, 2)"
 			case "object":
-				valuePacker = "PackObject"
-				valueUnpacker = "UnpackObject"
+				valuePacker = "v.Pack()"
+				valueUnpacker = "Unpack" + goRefType(prop.Ref, fmt.Sprintf("%s.props[%d]", sch.RPath, i)) + "(v, nil)"
 			case "enum":
-				valuePacker = "PackEnum"
-				valueUnpacker = "UnpackEnum"
+				valuePacker = "v.Pack()"
+				valueUnpacker = "Unpack" + goRefType(prop.Ref, fmt.Sprintf("%s.props[%d]", sch.RPath, i)) + "(v, nil)"
 			default:
 				panic(fmt.Errorf(
 					"Invalid HMap value type '%s' found in: %s.props[%d]",
@@ -897,28 +906,28 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			}
 			createIfNil := fmt.Sprintf(""+
 				"        if o.%s == nil {\n"+
-				"            o.%s = %smap[string]%s{}\n"+
+				"            o.%s = %s%s{}\n"+
 				"        }\n",
-				prop.GoName, prop.GoName, prt, *prop.HMapTyp,
+				prop.GoName, prop.GoName, prt, typ,
 			)
 			packFn += fmt.Sprintf(""+
 				"    {\n"+
 				"        for k, v := range %so.%s {\n"+
-				"            result = append(result, PackHMap(k, %s(v, 0%s), %d)...)\n"+
+				"            result = append(result, PackHMap(k, %s, %d)...)\n"+
 				"        }\n"+
 				"    }\n",
-				derefPrt, prop.GoName, valuePacker, decimalSpaces, i)
+				derefPrt, prop.GoName, valuePacker, i)
 			setPropFn += fmt.Sprintf(""+
 				"    case %d:\n"+
 				"        d, ok := v.(map[string][]byte)\n"+
 				"        if !ok { return fmt.Errorf(\"invalid datatype for %%s\", level) }\n"+
 				createIfNil+
 				"        for k, v := range d {\n"+
-				"			val, _ := %s(v, 2%s)\n"+
-				"           (%so.%s)[k] = val%s\n"+
+				"			val, _ := %s\n"+
+				"           (%so.%s)[k] = *val%s\n"+
 				"		 }\n"+
 				"",
-				i, valueUnpacker, decimalSpaces, derefPrt, prop.GoName, decimalDevider,
+				i, valueUnpacker, derefPrt, prop.GoName, decimalDevider,
 			)
 		default:
 			panic(fmt.Errorf(
@@ -963,9 +972,13 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 		if prop.Desc != "" {
 			desc = fmt.Sprintf("    // %s\n    ", prop.Desc)
 		}
+		jsonName := goTagValue(prop.Name)
+		if prop.JsonName != nil {
+			jsonName = *prop.JsonName
+		}
 		oStruct += fmt.Sprintf(
 			"%s%s$name%s$type`json:\"%s,omitempty\"%s%s`\n",
-			desc, prop.GoName, typ, goTagValue(prop.Name), bson, requiredTag,
+			desc, prop.GoName, typ, jsonName, bson, requiredTag,
 		)
 		fns += fmt.Sprintf(
 			"func (o *%s) Get%s() %s {\n    return o.%s\n}\n",
