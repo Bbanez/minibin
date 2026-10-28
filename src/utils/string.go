@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 	"regexp"
 	"strings"
+	"unicode"
 )
 
 var N_CHARS = [10]string{
@@ -86,6 +87,13 @@ func IsValidEmail(email string) bool {
 	return emailRegex.MatchString(email)
 }
 
+func ToSlug(s string) string {
+	s = strings.ToLower(s)
+	s = regexp.MustCompile(`[^\p{L}\d]+`).ReplaceAllString(s, "-")
+	s = regexp.MustCompile(`^-+|-+$`).ReplaceAllString(s, "")
+	return s
+}
+
 func ToCamelCase(s string) string {
 	s = strings.ToLower(s[0:1]) + s[1:]
 	var i = 0
@@ -124,13 +132,6 @@ func ToPascalCase(s string) string {
 	return s
 }
 
-func ToSlug(s string) string {
-	s = strings.ToLower(s)
-	s = regexp.MustCompile(`[^\p{L}\d]+`).ReplaceAllString(s, "-")
-	s = regexp.MustCompile(`^-+|-+$`).ReplaceAllString(s, "")
-	return s
-}
-
 func ToSnakeCase(s string) string {
 	s = strings.ToLower(s)
 	s = strings.ReplaceAll(s, " ", "_")
@@ -145,6 +146,23 @@ func ToKebabCase(s string) string {
 	s = strings.ReplaceAll(s, "_", "-")
 	s = regexp.MustCompile(`[^a-z0-9-]+`).ReplaceAllString(s, "")
 	return s
+}
+
+func ToUpperSnakeCase(s string) string {
+	var result []rune
+	for i, r := range s {
+		if unicode.IsUpper(r) && i > 0 && (unicode.IsLower(rune(s[i-1])) || unicode.IsDigit(rune(s[i-1]))) {
+			result = append(result, '_')
+		}
+		if r == '-' || r == ' ' {
+			result = append(result, '_')
+		} else if r != '_' {
+			result = append(result, unicode.ToUpper(r))
+		} else {
+			result = append(result, '_')
+		}
+	}
+	return strings.Trim(strings.ReplaceAll(string(result), "__", "_"), "_")
 }
 
 func TextBetween(s string, begin string, end string) *string {
@@ -196,6 +214,28 @@ func AllTextBetween(s string, begin string, end string) []string {
 		index.end += len(end)
 	}
 	return output
+}
+
+type StringSlice struct {
+	s []string
+}
+
+func NewStringSlice(s []string) *StringSlice {
+	return &StringSlice{s: s}
+}
+
+func (ss *StringSlice) Append(s string) *StringSlice {
+	ss.s = append(ss.s, s)
+	return ss
+}
+
+func (ss *StringSlice) AppendMany(s []string) *StringSlice {
+	ss.s = append(ss.s, s...)
+	return ss
+}
+
+func (ss *StringSlice) Get() *[]string {
+	return &ss.s
 }
 
 // ----------------------------------------------------------------------------

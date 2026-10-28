@@ -8,9 +8,11 @@ import (
 )
 
 func ClearOutput(args *utils.Args) {
-	fs := utils.NewFS(&args.Output)
-	fmt.Printf("Clearing output directory...")
-	tree, err := fs.FileTree([]string{""}, []string{""})
+	fs := utils.NewFS(nil)
+	tree, err := fs.FileTree(
+		args.Output,
+		[]string{},
+	)
 	if err != nil {
 		panic(err)
 	}
@@ -19,6 +21,7 @@ func ClearOutput(args *utils.Args) {
 		if strings.HasPrefix(node.RelPath, "obj_") ||
 			strings.HasPrefix(node.RelPath, "enum_") ||
 			strings.HasPrefix(node.RelPath, "minibin__") {
+			fmt.Println("Deleting: " + node.RelPath)
 			fs.Delete(node.AbsPath).Unwrap()
 		}
 	}

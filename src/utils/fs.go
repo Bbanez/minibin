@@ -46,8 +46,20 @@ func NewFS(basePath *[]string) FS {
 	return fs
 }
 
+func PathJoin(path ...string) string {
+	slash := "/"
+	if runtime.GOOS == "windows" {
+		slash = "\\"
+	}
+	return strings.Join(path, slash)
+}
+
 func (fs *FS) Path(path ...string) string {
-	return fs.BasePath + fs.slash + strings.Join(path, fs.slash)
+	p := fs.Join(path...)
+	if strings.HasPrefix(p, "/") || strings.Contains(p, "\\") {
+		return p
+	}
+	return fs.BasePath + fs.slash + p
 }
 
 func (fs FS) Join(path ...string) string {
@@ -181,14 +193,19 @@ type FileTreeNode struct {
 
 func (fs *FS) FileTree(startLocation []string, currentLocation []string) (*Array[FileTreeNode], error) {
 	startLoc := fs.Path(startLocation...)
-	currLoc := fs.Join(currentLocation...)
+	var currLoc string
+	if len(currentLocation) == 0 {
+		currLoc = ""
+	} else {
+		currLoc = fs.Join(currentLocation...) + fs.slash
+	}
 	output := array[FileTreeNode]()
-	files, err := os.ReadDir(currLoc)
+	files, err := os.ReadDir(startLoc + fs.slash + currLoc)
 	if err != nil {
 		return &output, err
 	}
 	for _, file := range files {
-		filePath := startLoc + fs.slash + currLoc + fs.slash + file.Name()
+		filePath := startLoc + fs.slash + currLoc + file.Name()
 		if file.IsDir() {
 			children, err := fs.FileTree(
 				startLocation,

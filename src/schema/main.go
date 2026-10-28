@@ -10,17 +10,16 @@ import (
 	"github.com/bbanez/minibin/src/utils"
 )
 
-func Read(path string) []*Schema {
-	pathParts := strings.Split(path, "/")
+func Read(pathParts []string) []*Schema {
 	fs := utils.NewFS(&pathParts)
-	filePathsResult := fs.ListFiles("")
-	if filePathsResult.Error != nil {
-		fmt.Println("Failed to list schema files in input directory:", path)
-		panic(filePathsResult.Error)
+	tree, err := fs.FileTree([]string{}, []string{})
+	if err != nil {
+		fmt.Println("Failed to list schema files in input directory:", strings.Join(pathParts, "/"))
+		panic(err)
 	}
 	schemas := []*Schema{}
-	for i := range filePathsResult.Value {
-		filePath := filePathsResult.Value[i]
+	for i := range tree.Items {
+		filePath := tree.Items[i].RelPath
 		filePathParts := strings.Split(filePath, "/")
 		bytesResult := fs.Read(filePathParts...)
 		if bytesResult.Error != nil {

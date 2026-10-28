@@ -10,13 +10,13 @@ func GenerateGoStringTemplates() {
 	fs := utils.NewFS(nil)
 	tree, err := fs.FileTree(
 		[]string{"string_templates"},
-		[]string{"string_templates"},
+		[]string{},
 	)
 	if err != nil {
 		panic(err)
 	}
 	for _, file := range tree.Items {
-		data := fs.ReadString(file.RelPath)
+		data := fs.ReadString("string_templates", file.RelPath)
 		if data.Error != nil {
 			panic(data.Error)
 		}

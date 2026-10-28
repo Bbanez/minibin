@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"os"
 	"slices"
 	"strings"
@@ -33,7 +34,7 @@ var argInfos = []ArgInfo{
 		desc:  "Where to find schema files, Default: minibin-schemas",
 		typ:   "string",
 		parse: func(argv []string, at_idx int, self *ArgInfo, args *Args) {
-			args.Input = strings.Split(argv[at_idx], "/")
+			args.Input = strings.Split(argv[at_idx+1], "/")
 		},
 	},
 	{
@@ -41,7 +42,7 @@ var argInfos = []ArgInfo{
 		desc:  "Where to output generated files",
 		typ:   "string",
 		parse: func(argv []string, at_idx int, self *ArgInfo, args *Args) {
-			args.Output = strings.Split(argv[at_idx], "/")
+			args.Output = strings.Split(argv[at_idx+1], "/")
 		},
 	},
 	{
@@ -50,7 +51,7 @@ var argInfos = []ArgInfo{
 		typ:           "string",
 		allowedValues: &[]string{"go", "cpp", "rust", "ts"},
 		parse: func(argv []string, at_idx int, self *ArgInfo, args *Args) {
-			args.Lang = argv[at_idx]
+			args.Lang = argv[at_idx+1]
 		},
 	},
 	{
@@ -58,7 +59,7 @@ var argInfos = []ArgInfo{
 		desc:  "Base package name for generated code, Default: empty",
 		typ:   "string",
 		parse: func(argv []string, at_idx int, self *ArgInfo, args *Args) {
-			args.PackageBase = argv[at_idx]
+			args.PackageBase = argv[at_idx+1]
 		},
 	},
 	{
@@ -115,4 +116,17 @@ func GetArgs() *Args {
 		}
 	}
 	return args
+}
+
+func (args *Args) PrintHelp() {
+	message := `` +
+		"┌---------------------------------------------------------------┐\n" +
+		"│                             HELP                              │\n" +
+		"└---------------------------------------------------------------┘\n\n"
+	for _, info := range argInfos {
+		message += "---- " + info.desc + "\n"
+		message += "        Type: " + info.typ + "\n"
+		message += "        Flags: " + strings.Join(info.flags, " │ ") + "\n\n"
+	}
+	fmt.Print(message)
 }
