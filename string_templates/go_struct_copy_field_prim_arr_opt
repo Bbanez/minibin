@@ -1,0 +1,7 @@
+        {{.PropName}}: mapArr(
+            o.{{.PropName}}, 
+            func (item *{{.Type}}) *{{.Type}} {
+                c := *item
+                return &c
+            },
+        ),

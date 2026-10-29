@@ -38,7 +38,7 @@ func GenerateGoStringTemplates() {
 		)
 		fn := "package string_templates\n\n" +
 			"func " + fnName + "(\n"
-		mutatedData := data.Value
+		mutatedData := strings.TrimSuffix(data.Value, "\n")
 		for _, k := range vars {
 			mutatedData = strings.ReplaceAll(mutatedData, "{{."+k+"}}", "` + "+k+" + `")
 			fn += "    " + k + " string,\n"

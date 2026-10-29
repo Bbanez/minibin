@@ -250,6 +250,17 @@ func KeepUniqueStrings(s []string) []string {
 	return out
 }
 
+func RepeatString(s string, count int) string {
+	if count <= 0 {
+		return ""
+	}
+	var sb strings.Builder
+	for range count {
+		sb.WriteString(s)
+	}
+	return sb.String()
+}
+
 // ----------------------------------------------------------------------------
 // --- String Object
 // ----------------------------------------------------------------------------

@@ -1,1 +1,1 @@
-    {{.PropName}}:{{.Indent}}{{.PropName}},
+        {{.PropName}}:{{.Indent}}{{.PropName}},

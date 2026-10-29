@@ -1,1 +1,1 @@
-   {{.PropName}}{{.TypeIndent}}{{.Type}}{{.CommentIndent}}`json:"{{.JsonPropName}},omitempty"{{.OtherComments}}` 
+   {{.PropName}}{{.NameIndent}}{{.Type}}{{.CommentIndent}}{{.BackTick}}json:"{{.JsonPropName}},omitempty"{{.OtherComments}}{{.BackTick}}{{.Description}} 

@@ -1,3 +1,2 @@
     case {{.Pos}}:
         return "{{.PropName}}"
-

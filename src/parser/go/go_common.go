@@ -10,6 +10,22 @@ import (
 
 const maxUint32 = ^uint32(0)
 
+func clonePrimitive[T any](value *T) *T {
+	if value == nil {
+		return nil
+	}
+	v := *value
+	return &v
+}
+
+func mapArr[T any, K any](arr []T, fn func(T) K) []K {
+	result := make([]K, len(arr))
+	for i, v := range arr {
+		result[i] = fn(v)
+	}
+	return result
+}
+
 func numToStr(num any) string {
 	switch v := num.(type) {
 	case int32:

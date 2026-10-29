@@ -51,6 +51,8 @@ func (o *{{.StructName}}) SetPropAtPos(pos int, v any, level string) error {
 func (o *{{.StructName}}) GetPropNameAtPos(pos int) string {
     switch pos {
 {{.GetPropNameAtPosCases}}
+    default:
+        return "__unknown__"
     }
 }
 

@@ -3,6 +3,7 @@ package parser_go
 import (
 	"fmt"
 	"math"
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -1361,11 +1362,11 @@ func parseObjectV2(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 	copyFnFields := []string{}
 	getPropNameAtPosCases := []string{}
 	gettersSetters := []string{}
-	packFnBody := ""
-	setPropAtPosCases := []string{}
 	structFields := []string{}
 	structFieldsInit := []string{}
 	structFieldsInitParams := []string{}
+	setPropAtPosCases := []string{}
+	packFnBody := ""
 	toJsonBody := ""
 	goNames := make(map[string]struct{}, len(sch.Props))
 
@@ -1416,33 +1417,158 @@ func parseObjectV2(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 		}
 	}
 
-	for i, prop := range sch.Props {
-		typ := miniTypToGoTyp(prop.Typ, prop.HMapTyp, prop.Ref)
-		switch prop.Typ {
-		case "string":
-			copyFnFields = append(
-				copyFnFields,
-			)
-			gettersSetters = append(
-				gettersSetters,
-				string_templates.GoStructPropGetSet(
-					prop.GoName,
-					sch.PascalName,
-					typ,
-				),
-			)
+	for pos, prop := range sch.Props {
+		posStr := strconv.Itoa(pos)
+		rootTyp := miniTypToGoTyp(prop.Typ, prop.HMapTyp, prop.Ref)
+		typ := rootTyp
+		if !prop.Required || (prop.Array && prop.Typ == "object") {
+			typ = "*" + typ
 		}
+		if prop.Array {
+			typ = "[]" + typ
+		}
+		prop.GoTyp = typ
+		nameIndent := longestNameLen - len(prop.GoName) + 1
+		nameIndentStr := utils.RepeatString(" ", nameIndent)
+		typeIndent := longestTypeLen - len(typ) + 1
+		typeIndentStr := utils.RepeatString(" ", typeIndent)
+		jsonPropName := prop.Name
+		if prop.JsonName != nil {
+			jsonPropName = *prop.JsonName
+		}
+		getPropNameAtPosCases = append(
+			getPropNameAtPosCases,
+			string_templates.GoStructGetPropNameAtPosCase(
+				posStr,
+				prop.Name,
+			),
+		)
+		gettersSetters = append(
+			gettersSetters,
+			string_templates.GoStructPropGetSet(
+				prop.GoName,
+				sch.PascalName,
+				typ,
+			),
+		)
+		propDesc := prop.Desc
+		if propDesc != "" {
+			propDesc = "// " + prop.Desc
+		}
+		structFields = append(
+			structFields,
+			string_templates.GoStructField(
+				"`",
+				typeIndentStr,
+				propDesc,
+				jsonPropName,
+				nameIndentStr,
+				"",
+				prop.GoName,
+				typ,
+			),
+		)
+		structFieldsInit = append(
+			structFieldsInit,
+			string_templates.GoStructFieldInit(
+				nameIndentStr,
+				prop.GoName,
+			),
+		)
+		structFieldsInitParams = append(
+			structFieldsInitParams,
+			string_templates.GoStructFieldInitParam(
+				propDesc,
+				typeIndentStr,
+				nameIndentStr,
+				prop.GoName,
+				typ,
+			),
+		)
+		switch prop.Typ {
+		case "string", "i32", "i64", "u32", "u64", "f32", "f64", "bool", "enum":
+			if prop.Array {
+				if prop.Required {
+					copyFnFields = append(
+						copyFnFields,
+						string_templates.GoStructCopyFieldPrimArrReq(
+							prop.GoName,
+							rootTyp,
+						),
+					)
+				} else {
+					copyFnFields = append(
+						copyFnFields,
+						string_templates.GoStructCopyFieldPrimArrOpt(
+							prop.GoName,
+							rootTyp,
+						),
+					)
+				}
+			} else {
+				if prop.Required {
+					copyFnFields = append(
+						copyFnFields,
+						string_templates.GoStructCopyFieldReq(
+							nameIndentStr,
+							"",
+							prop.GoName,
+						),
+					)
+				} else {
+					copyFnFields = append(
+						copyFnFields,
+						string_templates.GoStructCopyFieldOpt(
+							nameIndentStr,
+							"",
+							prop.GoName,
+						),
+					)
+				}
+			}
+		case "object":
+			if prop.Array {
+				copyFnFields = append(
+					copyFnFields,
+					string_templates.GoStructCopyFieldObjArrOpt(
+						prop.GoName,
+						rootTyp,
+					),
+				)
+			} else {
+				if prop.Required {
+					copyFnFields = append(
+						copyFnFields,
+						string_templates.GoStructCopyFieldReq(
+							nameIndentStr+"*",
+							".Copy()",
+							prop.GoName,
+						),
+					)
+				} else {
+					copyFnFields = append(
+						copyFnFields,
+						string_templates.GoStructCopyField(
+							nameIndentStr,
+							".Copy()",
+							prop.GoName,
+						),
+					)
+				}
+			}
+		}
+
 	}
 
 	structData := string_templates.GoStruct(
-		strings.Join(copyFnFields, ",\n"),
+		strings.Join(copyFnFields, "\n"),
 		strings.Join(getPropNameAtPosCases, "\n"),
 		strings.Join(gettersSetters, "\n\n"),
 		packFnBody,
 		strings.Join(setPropAtPosCases, "\n"),
 		strings.Join(structFields, "\n"),
 		strings.Join(structFieldsInit, "\n"),
-		strings.Join(structFieldsInitParams, ",\n"),
+		strings.Join(structFieldsInitParams, "\n"),
 		structName,
 		toJsonBody,
 	)

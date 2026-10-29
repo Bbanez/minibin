@@ -1,0 +1,6 @@
+        {{.PropName}}: mapArr(
+            o.{{.PropName}}, 
+            func (item *{{.Type}}) *{{.Type}} {
+                return item.Copy()
+            },
+        ),
