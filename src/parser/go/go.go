@@ -1357,16 +1357,57 @@ func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 	return &output
 }
 
+func packPrimFn(
+	prop *schema.SchemaProp,
+	packFn string,
+	posStr string,
+	methodCall string,
+) string {
+	if prop.Array {
+		if prop.Required {
+			return string_templates.GoStructPackPrimArrReq(
+				methodCall,
+				packFn,
+				posStr,
+				prop.GoName,
+			)
+		} else {
+			return string_templates.GoStructPackPrimArrOpt(
+				methodCall,
+				packFn,
+				posStr,
+				prop.GoName,
+			)
+		}
+	} else {
+		if prop.Required {
+			return string_templates.GoStructPackPrimReq(
+				methodCall,
+				packFn,
+				posStr,
+				prop.GoName,
+			)
+		} else {
+			return string_templates.GoStructPackPrimOpt(
+				methodCall,
+				packFn,
+				posStr,
+				prop.GoName,
+			)
+		}
+	}
+}
+
 func parseObjectV2(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 	structName := sch.PascalName
-	copyFnFields := []string{}
-	getPropNameAtPosCases := []string{}
-	gettersSetters := []string{}
-	structFields := []string{}
-	structFieldsInit := []string{}
-	structFieldsInitParams := []string{}
-	setPropAtPosCases := []string{}
-	packFnBody := ""
+	copyFnFields := utils.Arr[string]()
+	getPropNameAtPosCases := utils.Arr[string]()
+	gettersSetters := utils.Arr[string]()
+	structFields := utils.Arr[string]()
+	structFieldsInit := utils.Arr[string]()
+	structFieldsInitParams := utils.Arr[string]()
+	setPropAtPosCases := utils.Arr[string]()
+	packFnBody := utils.Arr[string]()
 	toJsonBody := ""
 	goNames := make(map[string]struct{}, len(sch.Props))
 
@@ -1436,15 +1477,13 @@ func parseObjectV2(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 		if prop.JsonName != nil {
 			jsonPropName = *prop.JsonName
 		}
-		getPropNameAtPosCases = append(
-			getPropNameAtPosCases,
+		getPropNameAtPosCases.Push(
 			string_templates.GoStructGetPropNameAtPosCase(
 				posStr,
 				prop.Name,
 			),
 		)
-		gettersSetters = append(
-			gettersSetters,
+		gettersSetters.Push(
 			string_templates.GoStructPropGetSet(
 				prop.GoName,
 				sch.PascalName,
@@ -1455,8 +1494,7 @@ func parseObjectV2(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 		if propDesc != "" {
 			propDesc = "// " + prop.Desc
 		}
-		structFields = append(
-			structFields,
+		structFields.Push(
 			string_templates.GoStructField(
 				"`",
 				typeIndentStr,
@@ -1468,15 +1506,13 @@ func parseObjectV2(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 				typ,
 			),
 		)
-		structFieldsInit = append(
-			structFieldsInit,
+		structFieldsInit.Push(
 			string_templates.GoStructFieldInit(
 				nameIndentStr,
 				prop.GoName,
 			),
 		)
-		structFieldsInitParams = append(
-			structFieldsInitParams,
+		structFieldsInitParams.Push(
 			string_templates.GoStructFieldInitParam(
 				propDesc,
 				typeIndentStr,
@@ -1485,20 +1521,20 @@ func parseObjectV2(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 				typ,
 			),
 		)
+
+		// Copy
 		switch prop.Typ {
 		case "string", "i32", "i64", "u32", "u64", "f32", "f64", "bool", "enum":
 			if prop.Array {
 				if prop.Required {
-					copyFnFields = append(
-						copyFnFields,
+					copyFnFields.Push(
 						string_templates.GoStructCopyFieldPrimArrReq(
 							prop.GoName,
 							rootTyp,
 						),
 					)
 				} else {
-					copyFnFields = append(
-						copyFnFields,
+					copyFnFields.Push(
 						string_templates.GoStructCopyFieldPrimArrOpt(
 							prop.GoName,
 							rootTyp,
@@ -1507,8 +1543,7 @@ func parseObjectV2(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 				}
 			} else {
 				if prop.Required {
-					copyFnFields = append(
-						copyFnFields,
+					copyFnFields.Push(
 						string_templates.GoStructCopyFieldReq(
 							nameIndentStr,
 							"",
@@ -1516,8 +1551,7 @@ func parseObjectV2(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 						),
 					)
 				} else {
-					copyFnFields = append(
-						copyFnFields,
+					copyFnFields.Push(
 						string_templates.GoStructCopyFieldOpt(
 							nameIndentStr,
 							"",
@@ -1526,10 +1560,10 @@ func parseObjectV2(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 					)
 				}
 			}
+
 		case "object":
 			if prop.Array {
-				copyFnFields = append(
-					copyFnFields,
+				copyFnFields.Push(
 					string_templates.GoStructCopyFieldObjArrOpt(
 						prop.GoName,
 						rootTyp,
@@ -1537,8 +1571,7 @@ func parseObjectV2(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 				)
 			} else {
 				if prop.Required {
-					copyFnFields = append(
-						copyFnFields,
+					copyFnFields.Push(
 						string_templates.GoStructCopyFieldReq(
 							nameIndentStr+"*",
 							".Copy()",
@@ -1546,8 +1579,7 @@ func parseObjectV2(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 						),
 					)
 				} else {
-					copyFnFields = append(
-						copyFnFields,
+					copyFnFields.Push(
 						string_templates.GoStructCopyField(
 							nameIndentStr,
 							".Copy()",
@@ -1558,17 +1590,175 @@ func parseObjectV2(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			}
 		}
 
+		// Pack
+		switch prop.Typ {
+		case "string":
+			packFnBody.Push(
+				packPrimFn(prop, "PackString", posStr, ""),
+			)
+		case "i32":
+			packFnBody.Push(
+				packPrimFn(prop, "PackInt32", posStr, ""),
+			)
+		case "i64":
+			packFnBody.Push(
+				packPrimFn(prop, "PackInt64", posStr, ""),
+			)
+		case "u32":
+			packFnBody.Push(
+				packPrimFn(prop, "PackUint32", posStr, ""),
+			)
+		case "u64":
+			packFnBody.Push(
+				packPrimFn(prop, "PackUint64", posStr, ""),
+			)
+		case "bool":
+			packFnBody.Push(
+				packPrimFn(prop, "PackBool", posStr, ""),
+			)
+		case "object":
+			packFnBody.Push(
+				packPrimFn(prop, "PackObject", posStr, ".Pack()"),
+			)
+		case "f32":
+			divider := strconv.FormatFloat(float64(prop.Decimals), 'f', -1, 32)
+			if prop.Array {
+				if prop.Required {
+					packFnBody.Push(
+						string_templates.GoStructPackFloatArrReq(
+							divider,
+							"PackFloat32",
+							posStr,
+							prop.GoName,
+						),
+					)
+				} else {
+					packFnBody.Push(
+						string_templates.GoStructPackFloatArrOpt(
+							divider,
+							"PackFloat32",
+							posStr,
+							prop.GoName,
+						),
+					)
+				}
+			} else {
+				if prop.Required {
+					packFnBody.Push(
+						string_templates.GoStructPackFloatReq(
+							divider,
+							"PackFloat32",
+							posStr,
+							prop.GoName,
+						),
+					)
+				} else {
+					packFnBody.Push(
+						string_templates.GoStructPackFloatOpt(
+							divider,
+							"PackFloat32",
+							posStr,
+							prop.GoName,
+						),
+					)
+				}
+			}
+		case "f64":
+			divider := strconv.FormatFloat(float64(prop.Decimals), 'f', -1, 32)
+			if prop.Array {
+				if prop.Required {
+					packFnBody.Push(
+						string_templates.GoStructPackFloatArrReq(
+							divider,
+							"PackFloat64",
+							posStr,
+							prop.GoName,
+						),
+					)
+				} else {
+					packFnBody.Push(
+						string_templates.GoStructPackFloatArrOpt(
+							divider,
+							"PackFloat64",
+							posStr,
+							prop.GoName,
+						),
+					)
+				}
+			} else {
+				if prop.Required {
+					packFnBody.Push(
+						string_templates.GoStructPackFloatReq(
+							divider,
+							"PackFloat64",
+							posStr,
+							prop.GoName,
+						),
+					)
+				} else {
+					packFnBody.Push(
+						string_templates.GoStructPackFloatOpt(
+							divider,
+							"PackFloat64",
+							posStr,
+							prop.GoName,
+						),
+					)
+				}
+			}
+		case "hmap":
+			if prop.Array {
+				if prop.Required {
+					packFnBody.Push(
+						string_templates.GoStructPackHmapArrReq(
+							"PackFloat64",
+							posStr,
+							prop.GoName,
+						),
+					)
+				} else {
+					packFnBody.Push(
+						string_templates.GoStructPackFloatArrOpt(
+							divider,
+							"PackFloat64",
+							posStr,
+							prop.GoName,
+						),
+					)
+				}
+			} else {
+				if prop.Required {
+					packFnBody.Push(
+						string_templates.GoStructPackFloatReq(
+							divider,
+							"PackFloat64",
+							posStr,
+							prop.GoName,
+						),
+					)
+				} else {
+					packFnBody.Push(
+						string_templates.GoStructPackFloatOpt(
+							divider,
+							"PackFloat64",
+							posStr,
+							prop.GoName,
+						),
+					)
+				}
+			}
+		}
 	}
 
 	structData := string_templates.GoStruct(
-		strings.Join(copyFnFields, "\n"),
-		strings.Join(getPropNameAtPosCases, "\n"),
-		strings.Join(gettersSetters, "\n\n"),
-		packFnBody,
-		strings.Join(setPropAtPosCases, "\n"),
-		strings.Join(structFields, "\n"),
-		strings.Join(structFieldsInit, "\n"),
-		strings.Join(structFieldsInitParams, "\n"),
+		strings.Join(copyFnFields.Items, "\n"),
+		strings.Join(getPropNameAtPosCases.Items, "\n"),
+		strings.Join(gettersSetters.Items, "\n\n"),
+		strings.Join(packFnBody.Items, "\n"),
+		strings.Join(setPropAtPosCases.Items, "\n"),
+		strings.Join(structFields.Items, "\n"),
+		strings.Join(structFieldsInit.Items, "\n"),
+		strings.Join(structFieldsInitParams.Items, "\n"),
 		structName,
 		toJsonBody,
 	)

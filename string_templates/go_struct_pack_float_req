@@ -1,4 +1,4 @@
     result = append(
         result, 
-        {{.PackFn}}(o.{{.PropName}}, {{.Pos}}, {{.Divider}}),
+        {{.PackFn}}(o.{{.PropName}}, {{.Pos}}, {{.Divider}})...,
     )

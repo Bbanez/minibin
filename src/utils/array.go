@@ -69,7 +69,7 @@ type Array[T any] struct {
 	_lock sync.Mutex
 }
 
-func array[T any](items ...T) Array[T] {
+func Arr[T any](items ...T) Array[T] {
 	return Array[T]{
 		Items: items,
 	}

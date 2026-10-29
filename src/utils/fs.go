@@ -199,7 +199,7 @@ func (fs *FS) FileTree(startLocation []string, currentLocation []string) (*Array
 	} else {
 		currLoc = fs.Join(currentLocation...) + fs.slash
 	}
-	output := array[FileTreeNode]()
+	output := Arr[FileTreeNode]()
 	files, err := os.ReadDir(startLoc + fs.slash + currLoc)
 	if err != nil {
 		return &output, err

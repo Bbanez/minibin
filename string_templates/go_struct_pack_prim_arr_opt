@@ -1,6 +1,6 @@
     for i := range o.{{.PropName}} {
         result = append(
             result, 
-            {{.PackFn}}((*o.{{.PropName}}[i]){{.MethodCall}}, {{.Pos}}),
+            {{.PackFn}}((*o.{{.PropName}}[i]){{.MethodCall}}, {{.Pos}})...,
         )
     }
