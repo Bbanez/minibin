@@ -1,0 +1,6 @@
+    case {{.Pos}}:
+        d, ok := v.({{.Type}})
+        if !ok {
+            return fmt.Errorf("invalid datatype for %s", level)
+        }
+        o.{{.PropName}} = append(o.{{.PropName}}, &d)

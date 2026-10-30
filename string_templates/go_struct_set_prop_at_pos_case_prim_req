@@ -1,4 +1,4 @@
-    case {{.Pos}}
+    case {{.Pos}}:
         d, ok := v.({{.Type}})
         if !ok {
             return fmt.Errorf("invalid datatype for %s", level)

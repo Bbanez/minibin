@@ -1,0 +1,7 @@
+    case {{.Pos}}:
+        d, ok := v.(hmapKeyValue)
+        if !ok {
+            return fmt.Errorf("invalid datatype for %s", level)
+        }
+        data, _ := {{.UnpackFn}}(d.Value, 2)
+        o.{{.PropName}}[d.Key] = data

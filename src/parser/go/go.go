@@ -1398,6 +1398,533 @@ func packPrimFn(
 	}
 }
 
+func packHmapFn(
+	prop *schema.SchemaProp,
+	packFn string,
+	methodCall string,
+	divider string,
+) string {
+	if prop.Required {
+		return string_templates.GoStructPackHmapReq(
+			divider,
+			methodCall,
+			packFn,
+			prop.GoName,
+		)
+	} else {
+		return string_templates.GoStructPackHmapOpt(
+			divider,
+			methodCall,
+			packFn,
+			prop.GoName,
+		)
+	}
+}
+
+func packProp(sch *schema.Schema, prop *schema.SchemaProp, posStr string) *utils.Array[string] {
+	packFnBody := utils.Arr[string]()
+	switch prop.Typ {
+	case "string":
+		packFnBody.Push(
+			packPrimFn(prop, "PackString", posStr, ""),
+		)
+	case "i32":
+		packFnBody.Push(
+			packPrimFn(prop, "PackInt32", posStr, ""),
+		)
+	case "i64":
+		packFnBody.Push(
+			packPrimFn(prop, "PackInt64", posStr, ""),
+		)
+	case "u32":
+		packFnBody.Push(
+			packPrimFn(prop, "PackUint32", posStr, ""),
+		)
+	case "u64":
+		packFnBody.Push(
+			packPrimFn(prop, "PackUint64", posStr, ""),
+		)
+	case "bool":
+		packFnBody.Push(
+			packPrimFn(prop, "PackBool", posStr, ""),
+		)
+	case "object":
+		packFnBody.Push(
+			packPrimFn(prop, "PackObject", posStr, ".Pack()"),
+		)
+	case "f32":
+		divider := strconv.FormatFloat(float64(prop.Decimals), 'f', -1, 32)
+		if prop.Array {
+			if prop.Required {
+				packFnBody.Push(
+					string_templates.GoStructPackFloatArrReq(
+						divider,
+						"PackFloat32",
+						posStr,
+						prop.GoName,
+					),
+				)
+			} else {
+				packFnBody.Push(
+					string_templates.GoStructPackFloatArrOpt(
+						divider,
+						"PackFloat32",
+						posStr,
+						prop.GoName,
+					),
+				)
+			}
+		} else {
+			if prop.Required {
+				packFnBody.Push(
+					string_templates.GoStructPackFloatReq(
+						divider,
+						"PackFloat32",
+						posStr,
+						prop.GoName,
+					),
+				)
+			} else {
+				packFnBody.Push(
+					string_templates.GoStructPackFloatOpt(
+						divider,
+						"PackFloat32",
+						posStr,
+						prop.GoName,
+					),
+				)
+			}
+		}
+	case "f64":
+		divider := strconv.FormatFloat(float64(prop.Decimals), 'f', -1, 32)
+		if prop.Array {
+			if prop.Required {
+				packFnBody.Push(
+					string_templates.GoStructPackFloatArrReq(
+						divider,
+						"PackFloat64",
+						posStr,
+						prop.GoName,
+					),
+				)
+			} else {
+				packFnBody.Push(
+					string_templates.GoStructPackFloatArrOpt(
+						divider,
+						"PackFloat64",
+						posStr,
+						prop.GoName,
+					),
+				)
+			}
+		} else {
+			if prop.Required {
+				packFnBody.Push(
+					string_templates.GoStructPackFloatReq(
+						divider,
+						"PackFloat64",
+						posStr,
+						prop.GoName,
+					),
+				)
+			} else {
+				packFnBody.Push(
+					string_templates.GoStructPackFloatOpt(
+						divider,
+						"PackFloat64",
+						posStr,
+						prop.GoName,
+					),
+				)
+			}
+		}
+	case "hmap":
+		divider := ""
+		if prop.Decimals > 1 {
+			divider = "," + strconv.FormatFloat(float64(prop.Decimals), 'f', -1, 32)
+		}
+		if prop.HMapTyp == nil {
+			panic(fmt.Errorf(
+				"Missing HMap value type found in: %s.props[%s]",
+				sch.RPath, posStr,
+			))
+		}
+		rootHmapTyp := "map[string]" + miniTypToGoTyp(
+			*prop.HMapTyp, nil, prop.Ref,
+		)
+		hmapTyp := rootHmapTyp
+		if !prop.Required || (prop.Array && prop.Typ == "object") {
+			hmapTyp = "*" + hmapTyp
+		}
+		if prop.Array {
+			hmapTyp = "[]" + hmapTyp
+		}
+		switch *prop.HMapTyp {
+		case "string":
+			packFnBody.Push(packHmapFn(prop, "PackString", "", divider))
+		case "i32":
+			packFnBody.Push(packHmapFn(prop, "PackInt32", "", divider))
+		case "i64":
+			packFnBody.Push(packHmapFn(prop, "PackInt64", "", divider))
+		case "u32":
+			packFnBody.Push(packHmapFn(prop, "PackUint32", "", divider))
+		case "u64":
+			packFnBody.Push(packHmapFn(prop, "PackUint64", "", divider))
+		case "f32":
+			packFnBody.Push(packHmapFn(prop, "PackFloat32", "", divider))
+		case "f64":
+			packFnBody.Push(packHmapFn(prop, "PackFloat64", "", divider))
+		case "bool":
+			packFnBody.Push(packHmapFn(prop, "PackBool", "", divider))
+		case "bytes":
+			packFnBody.Push(packHmapFn(prop, "PackBytes", "", divider))
+		case "object":
+			packFnBody.Push(packHmapFn(prop, "PackObject", ".Pack()", divider))
+		case "enum":
+			packFnBody.Push(packHmapFn(prop, "PackEnum", "", divider))
+		default:
+			panic(fmt.Errorf(
+				"Invalid HMap value type '%s' found in: %s.props[%s]",
+				*prop.HMapTyp, sch.RPath, posStr,
+			))
+		}
+	}
+	return &packFnBody
+}
+
+func setPropFnHMapWrapper(prop *schema.SchemaProp, posStr string, unpackFn string) string {
+	valueTyp := miniTypToGoTyp(*prop.HMapTyp, nil, prop.Ref)
+	if prop.Required {
+		return string_templates.GoStructSetPropAtPosCaseHmapPrimReq(
+			posStr,
+			prop.GoName,
+			unpackFn,
+		)
+	} else {
+		return string_templates.GoStructSetPropAtPosCaseHmapPrimOpt(
+			posStr,
+			prop.GoName,
+			valueTyp,
+			unpackFn,
+		)
+	}
+}
+
+func setPropFnWrapper(prop *schema.SchemaProp, posStr string, rootTyp string, typ string) *utils.Array[string] {
+	setPropCases := utils.Arr[string]()
+	primWrapperFn := func(typ string) {
+		if prop.Array {
+			if prop.Required {
+				setPropCases.Push(
+					string_templates.GoStructSetPropAtPosCasePrimArrReq(
+						posStr,
+						prop.GoName,
+						rootTyp,
+					),
+				)
+			} else {
+				setPropCases.Push(
+					string_templates.GoStructSetPropAtPosCasePrimArrOpt(
+						posStr,
+						prop.GoName,
+						rootTyp,
+					),
+				)
+			}
+		} else {
+			if prop.Required {
+				setPropCases.Push(
+					string_templates.GoStructSetPropAtPosCasePrimReq(
+						posStr,
+						prop.GoName,
+						rootTyp,
+					),
+				)
+			} else {
+				setPropCases.Push(
+					string_templates.GoStructSetPropAtPosCasePrimOpt(
+						posStr,
+						prop.GoName,
+						rootTyp,
+					),
+				)
+			}
+		}
+	}
+	switch prop.Typ {
+	case "string", "i32", "i64", "u32", "u64", "bool":
+		primWrapperFn(rootTyp)
+	case "f32":
+		divider := strconv.FormatFloat(float64(prop.Decimals), 'f', -1, 32)
+		if prop.Array {
+			if prop.Required {
+				setPropCases.Push(
+					string_templates.GoStructSetPropAtPosCaseFloatArrReq(
+						divider,
+						"float32",
+						posStr,
+						prop.GoName,
+						"int32",
+					),
+				)
+			} else {
+				setPropCases.Push(
+					string_templates.GoStructSetPropAtPosCaseFloatArrOpt(
+						divider,
+						"float32",
+						posStr,
+						prop.GoName,
+						"int32",
+					),
+				)
+			}
+		} else {
+			if prop.Required {
+				setPropCases.Push(
+					string_templates.GoStructSetPropAtPosCaseFloatReq(
+						divider,
+						"float32",
+						posStr,
+						prop.GoName,
+						"int32",
+					),
+				)
+			} else {
+				setPropCases.Push(
+					string_templates.GoStructSetPropAtPosCaseFloatOpt(
+						divider,
+						"float32",
+						posStr,
+						prop.GoName,
+						"int32",
+					),
+				)
+			}
+		}
+	case "f64":
+		divider := strconv.FormatFloat(float64(prop.Decimals), 'f', -1, 32)
+		if prop.Array {
+			if prop.Required {
+				setPropCases.Push(
+					string_templates.GoStructSetPropAtPosCaseFloatArrReq(
+						divider,
+						"float64",
+						posStr,
+						prop.GoName,
+						"int64",
+					),
+				)
+			} else {
+				setPropCases.Push(
+					string_templates.GoStructSetPropAtPosCaseFloatArrOpt(
+						divider,
+						"float64",
+						posStr,
+						prop.GoName,
+						"int64",
+					),
+				)
+			}
+		} else {
+			if prop.Required {
+				setPropCases.Push(
+					string_templates.GoStructSetPropAtPosCaseFloatReq(
+						divider,
+						"float64",
+						posStr,
+						prop.GoName,
+						"int64",
+					),
+				)
+			} else {
+				setPropCases.Push(
+					string_templates.GoStructSetPropAtPosCaseFloatOpt(
+						divider,
+						"float64",
+						posStr,
+						prop.GoName,
+						"int64",
+					),
+				)
+			}
+		}
+	case "enum":
+		if prop.Array {
+			setPropCases.Push(
+				string_templates.GoStructSetPropAtPosCaseEnumArr(
+					rootTyp,
+					posStr,
+					prop.GoName,
+				),
+			)
+		} else {
+			if prop.Required {
+				setPropCases.Push(
+					string_templates.GoStructSetPropAtPosCaseEnumReq(
+						rootTyp,
+						posStr,
+						prop.GoName,
+					),
+				)
+			} else {
+				setPropCases.Push(
+					string_templates.GoStructSetPropAtPosCaseEnumOpt(
+						rootTyp,
+						posStr,
+						prop.GoName,
+					),
+				)
+			}
+		}
+	case "object":
+		if prop.Array {
+			setPropCases.Push(
+				string_templates.GoStructSetPropAtPosCaseObjArr(
+					rootTyp,
+					posStr,
+					prop.GoName,
+				),
+			)
+		} else {
+			if prop.Required {
+				setPropCases.Push(
+					string_templates.GoStructSetPropAtPosCaseObjReq(
+						rootTyp,
+						posStr,
+						prop.GoName,
+					),
+				)
+			} else {
+				setPropCases.Push(
+					string_templates.GoStructSetPropAtPosCaseObjOpt(
+						rootTyp,
+						posStr,
+						prop.GoName,
+					),
+				)
+			}
+		}
+	case "hmap":
+		hmapRootTyp := "map[string]" + miniTypToGoTyp(*prop.HMapTyp, nil, prop.Ref)
+		hmapTyp := hmapRootTyp
+		if !prop.Required || (prop.Array && prop.Typ == "object") {
+			hmapTyp = "*" + hmapTyp
+		}
+		if prop.Array {
+			hmapTyp = "[]" + hmapTyp
+		}
+		switch *prop.HMapTyp {
+		case "string":
+			setPropCases.Push(setPropFnHMapWrapper(
+				prop,
+				posStr,
+				"UnpackString",
+			))
+		case "i32":
+			setPropCases.Push(setPropFnHMapWrapper(
+				prop,
+				posStr,
+				"UnpackInt32",
+			))
+		case "i64":
+			setPropCases.Push(setPropFnHMapWrapper(
+				prop,
+				posStr,
+				"UnpackInt64",
+			))
+		case "u32":
+			setPropCases.Push(setPropFnHMapWrapper(
+				prop,
+				posStr,
+				"UnpackUint32",
+			))
+		case "u64":
+			setPropCases.Push(setPropFnHMapWrapper(
+				prop,
+				posStr,
+				"UnpackUint64",
+			))
+		case "bool":
+			setPropCases.Push(setPropFnHMapWrapper(
+				prop,
+				posStr,
+				"UnpackBool",
+			))
+		}
+	}
+	return &setPropCases
+}
+
+func copyProp(prop *schema.SchemaProp, rootTyp string, nameIndentStr string) *utils.Array[string] {
+	copyFnFields := utils.Arr[string]()
+	switch prop.Typ {
+	case "string", "i32", "i64", "u32", "u64", "f32", "f64", "bool", "enum":
+		if prop.Array {
+			if prop.Required {
+				copyFnFields.Push(
+					string_templates.GoStructCopyFieldPrimArrReq(
+						prop.GoName,
+						rootTyp,
+					),
+				)
+			} else {
+				copyFnFields.Push(
+					string_templates.GoStructCopyFieldPrimArrOpt(
+						prop.GoName,
+						rootTyp,
+					),
+				)
+			}
+		} else {
+			if prop.Required {
+				copyFnFields.Push(
+					string_templates.GoStructCopyFieldReq(
+						nameIndentStr,
+						"",
+						prop.GoName,
+					),
+				)
+			} else {
+				copyFnFields.Push(
+					string_templates.GoStructCopyFieldOpt(
+						nameIndentStr,
+						"",
+						prop.GoName,
+					),
+				)
+			}
+		}
+	case "object":
+		if prop.Array {
+			copyFnFields.Push(
+				string_templates.GoStructCopyFieldObjArrOpt(
+					prop.GoName,
+					rootTyp,
+				),
+			)
+		} else {
+			if prop.Required {
+				copyFnFields.Push(
+					string_templates.GoStructCopyFieldReq(
+						nameIndentStr+"*",
+						".Copy()",
+						prop.GoName,
+					),
+				)
+			} else {
+				copyFnFields.Push(
+					string_templates.GoStructCopyField(
+						nameIndentStr,
+						".Copy()",
+						prop.GoName,
+					),
+				)
+			}
+		}
+	}
+	return &copyFnFields
+}
+
 func parseObjectV2(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 	structName := sch.PascalName
 	copyFnFields := utils.Arr[string]()
@@ -1465,7 +1992,7 @@ func parseObjectV2(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 		if !prop.Required || (prop.Array && prop.Typ == "object") {
 			typ = "*" + typ
 		}
-		if prop.Array {
+		if prop.Array && prop.HMapTyp == nil {
 			typ = "[]" + typ
 		}
 		prop.GoTyp = typ
@@ -1522,232 +2049,9 @@ func parseObjectV2(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
 			),
 		)
 
-		// Copy
-		switch prop.Typ {
-		case "string", "i32", "i64", "u32", "u64", "f32", "f64", "bool", "enum":
-			if prop.Array {
-				if prop.Required {
-					copyFnFields.Push(
-						string_templates.GoStructCopyFieldPrimArrReq(
-							prop.GoName,
-							rootTyp,
-						),
-					)
-				} else {
-					copyFnFields.Push(
-						string_templates.GoStructCopyFieldPrimArrOpt(
-							prop.GoName,
-							rootTyp,
-						),
-					)
-				}
-			} else {
-				if prop.Required {
-					copyFnFields.Push(
-						string_templates.GoStructCopyFieldReq(
-							nameIndentStr,
-							"",
-							prop.GoName,
-						),
-					)
-				} else {
-					copyFnFields.Push(
-						string_templates.GoStructCopyFieldOpt(
-							nameIndentStr,
-							"",
-							prop.GoName,
-						),
-					)
-				}
-			}
-
-		case "object":
-			if prop.Array {
-				copyFnFields.Push(
-					string_templates.GoStructCopyFieldObjArrOpt(
-						prop.GoName,
-						rootTyp,
-					),
-				)
-			} else {
-				if prop.Required {
-					copyFnFields.Push(
-						string_templates.GoStructCopyFieldReq(
-							nameIndentStr+"*",
-							".Copy()",
-							prop.GoName,
-						),
-					)
-				} else {
-					copyFnFields.Push(
-						string_templates.GoStructCopyField(
-							nameIndentStr,
-							".Copy()",
-							prop.GoName,
-						),
-					)
-				}
-			}
-		}
-
-		// Pack
-		switch prop.Typ {
-		case "string":
-			packFnBody.Push(
-				packPrimFn(prop, "PackString", posStr, ""),
-			)
-		case "i32":
-			packFnBody.Push(
-				packPrimFn(prop, "PackInt32", posStr, ""),
-			)
-		case "i64":
-			packFnBody.Push(
-				packPrimFn(prop, "PackInt64", posStr, ""),
-			)
-		case "u32":
-			packFnBody.Push(
-				packPrimFn(prop, "PackUint32", posStr, ""),
-			)
-		case "u64":
-			packFnBody.Push(
-				packPrimFn(prop, "PackUint64", posStr, ""),
-			)
-		case "bool":
-			packFnBody.Push(
-				packPrimFn(prop, "PackBool", posStr, ""),
-			)
-		case "object":
-			packFnBody.Push(
-				packPrimFn(prop, "PackObject", posStr, ".Pack()"),
-			)
-		case "f32":
-			divider := strconv.FormatFloat(float64(prop.Decimals), 'f', -1, 32)
-			if prop.Array {
-				if prop.Required {
-					packFnBody.Push(
-						string_templates.GoStructPackFloatArrReq(
-							divider,
-							"PackFloat32",
-							posStr,
-							prop.GoName,
-						),
-					)
-				} else {
-					packFnBody.Push(
-						string_templates.GoStructPackFloatArrOpt(
-							divider,
-							"PackFloat32",
-							posStr,
-							prop.GoName,
-						),
-					)
-				}
-			} else {
-				if prop.Required {
-					packFnBody.Push(
-						string_templates.GoStructPackFloatReq(
-							divider,
-							"PackFloat32",
-							posStr,
-							prop.GoName,
-						),
-					)
-				} else {
-					packFnBody.Push(
-						string_templates.GoStructPackFloatOpt(
-							divider,
-							"PackFloat32",
-							posStr,
-							prop.GoName,
-						),
-					)
-				}
-			}
-		case "f64":
-			divider := strconv.FormatFloat(float64(prop.Decimals), 'f', -1, 32)
-			if prop.Array {
-				if prop.Required {
-					packFnBody.Push(
-						string_templates.GoStructPackFloatArrReq(
-							divider,
-							"PackFloat64",
-							posStr,
-							prop.GoName,
-						),
-					)
-				} else {
-					packFnBody.Push(
-						string_templates.GoStructPackFloatArrOpt(
-							divider,
-							"PackFloat64",
-							posStr,
-							prop.GoName,
-						),
-					)
-				}
-			} else {
-				if prop.Required {
-					packFnBody.Push(
-						string_templates.GoStructPackFloatReq(
-							divider,
-							"PackFloat64",
-							posStr,
-							prop.GoName,
-						),
-					)
-				} else {
-					packFnBody.Push(
-						string_templates.GoStructPackFloatOpt(
-							divider,
-							"PackFloat64",
-							posStr,
-							prop.GoName,
-						),
-					)
-				}
-			}
-		case "hmap":
-			if prop.Array {
-				if prop.Required {
-					packFnBody.Push(
-						string_templates.GoStructPackHmapArrReq(
-							"PackFloat64",
-							posStr,
-							prop.GoName,
-						),
-					)
-				} else {
-					packFnBody.Push(
-						string_templates.GoStructPackFloatArrOpt(
-							divider,
-							"PackFloat64",
-							posStr,
-							prop.GoName,
-						),
-					)
-				}
-			} else {
-				if prop.Required {
-					packFnBody.Push(
-						string_templates.GoStructPackFloatReq(
-							divider,
-							"PackFloat64",
-							posStr,
-							prop.GoName,
-						),
-					)
-				} else {
-					packFnBody.Push(
-						string_templates.GoStructPackFloatOpt(
-							divider,
-							"PackFloat64",
-							posStr,
-							prop.GoName,
-						),
-					)
-				}
-			}
-		}
+		copyFnFields.PushMany(copyProp(prop, rootTyp, nameIndentStr).Items...)
+		packFnBody.PushMany(packProp(sch, prop, posStr).Items...)
+		setPropAtPosCases.PushMany(setPropFnWrapper(prop, posStr, rootTyp, typ).Items...)
 	}
 
 	structData := string_templates.GoStruct(

@@ -1,4 +1,4 @@
-    case {{.Pos}}
+    case {{.Pos}}:
         d, ok := v.(string)
         if !ok {
             return fmt.Errorf("invalid datatype for %s", level)
@@ -7,4 +7,4 @@
         if err != nil {
             return err
         }
-        o.{{.PropName}} = append(o.{{.PropName}}, &enum)
+        o.{{.PropName}} = append(o.{{.PropName}}, enum)

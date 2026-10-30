@@ -1,7 +1,7 @@
-    case {{.Pos}}
-        d, ok := v.({{.Type}})
+    case {{.Pos}}:
+        ud, ok := v.({{.UType}})
         if !ok {
             return fmt.Errorf("invalid datatype for %s", level)
         }
-        d := {{.Type}}(ud) / {{.Divisor}}
+        d := {{.FType}}(ud) / {{.Divisor}}
         o.{{.PropName}} = &d

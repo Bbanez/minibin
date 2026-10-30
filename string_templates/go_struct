@@ -45,6 +45,7 @@ func (o *{{.StructName}}) SetPropAtPos(pos int, v any, level string) error {
             pos, level,
         )
     }
+    return nil
 }
 
 func (o *{{.StructName}}) GetPropNameAtPos(pos int) string {

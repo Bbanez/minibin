@@ -10,6 +10,11 @@ import (
 
 const maxUint32 = ^uint32(0)
 
+type hmapKeyValue struct {
+	Key   string
+	Value []byte
+}
+
 func clonePrimitive[T any](value *T) *T {
 	if value == nil {
 		return nil
@@ -429,7 +434,7 @@ func unpack[T UnpackabeEntry](o T, b []byte, level string, depth int) error {
 			}
 		case 12:
 			k, v, next := UnpackHMap(bytes, atByte)
-			if err := o.SetPropAtPos(pos, map[string][]byte{k: v}, lvl); err != nil {
+			if err := o.SetPropAtPos(pos, hmapKeyValue{Key: k, Value: v}, lvl); err != nil {
 				return err
 			}
 			atByte = next
@@ -852,5 +857,4 @@ func mergeUint64(lenD int, bytes []byte) uint64 {
 			uint64(bytes[7])
 	}
 }
-
 `

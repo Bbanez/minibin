@@ -1,6 +1,11 @@
-    case {{.Pos}}
-        d, ok := v.({{.Type}})
+    case {{.Pos}}:
+        d, ok := v.([]byte)
         if !ok {
             return fmt.Errorf("invalid datatype for %s", level)
         }
-        o.{{.PropName}} = append(o.{{.PropName}}, &d)
+        lvl := level+"."+o.GetPropNameAtPos({{.Pos}})
+        obj, err := {{.ObjType}}Unpack(d, &lvl)
+        if err != nil {
+            return err
+        }
+        o.{{.PropName}} = append(o.{{.PropName}}, obj)
