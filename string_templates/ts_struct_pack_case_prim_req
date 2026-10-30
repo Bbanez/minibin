@@ -1,0 +1,5 @@
+    {{.PackFnName}}(
+        result, 
+        this.{{.PropName}}{{.MethodCall}},
+        {{.Pos}}{{.Decimals}},
+    );

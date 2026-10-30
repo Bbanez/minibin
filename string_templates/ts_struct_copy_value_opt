@@ -1,0 +1,3 @@
+            {{.PropName}}: this.{{.PropName}} 
+                ? this.{{.PropName}}{{.MethodCall}}
+                : undefined,

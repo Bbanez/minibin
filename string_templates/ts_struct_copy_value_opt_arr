@@ -1,0 +1,5 @@
+            {{.PropName}}: this.{{.PropName}}
+                ? this.{{.PropName}}.map((v) => {
+                    return v{{.MethodCall}};
+                })
+                : undefined,

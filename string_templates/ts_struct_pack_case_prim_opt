@@ -1,0 +1,7 @@
+    if(this.{{.PropName}}) {
+        {{.PackFnName}}(
+            result, 
+            this.{{.PropName}}{{.MethodCall}}, 
+            {{.Pos}}{{.Decimals}},
+        );
+    }

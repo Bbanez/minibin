@@ -1,0 +1,6 @@
+            case {{.Pos}}: {
+                if (!this.{{.PropName}}) {
+                    this.{{.PropName}} = [];
+                }
+                this.{{.PropName}}.push((value as {{.PropType}}){{.Divider}});
+            } break;

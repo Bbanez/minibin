@@ -1,0 +1,9 @@
+            case {{.Pos}}: {
+                const result = {{.PropType}}.unpack(value as number[]);
+                if (result[1] == null) {
+                    if (this.{{.PropName}} == null) {
+                        this.{{.PropName}} = [];
+                    }
+                    this.{{.PropName}}.push(result[0]);
+                }
+            } break;

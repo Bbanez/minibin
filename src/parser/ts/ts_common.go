@@ -4,6 +4,21 @@ const Common = `export interface UnpackageEntry {
     setPropAtPos(pos: number, value: unknown): void;
 }
 
+function loopMap<T, K>(
+    rec: Record<string, T>, 
+    callback: (
+        acc: Record<string, K>, 
+        key: string, 
+        value: T,
+    ) => void,
+): Record<string, K> {
+    const output: Record<string, K> = {};
+    for (const key in rec) {
+        callback(output, key, rec[key]);
+    }
+    return output
+}
+
 export class Minibin {
     static unpack<T extends UnpackageEntry>(
         o: T,

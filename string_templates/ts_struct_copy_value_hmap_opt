@@ -1,0 +1,5 @@
+            {{.PropName}}: this.{{.PropName}} 
+                ? loopMap(this.{{.PropName}}, (acc, key, val) => {
+                    acc[key] = val{{.MethodCall}};
+                })
+                : undefined,

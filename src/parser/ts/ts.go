@@ -10,65 +10,23 @@ import (
 )
 
 func Parse(schemas []*schema.Schema, args *utils.Args) []*p.ParserOutputItem {
-	outputItems := []*p.ParserOutputItem{
-		{
-			Path:    "minibin__common.ts",
-			Content: Common,
-		},
+	mainData := p.ParserOutputItem{
+		Path:    "minibin_generated.ts",
+		Content: Common,
 	}
+	outputItems := []*p.ParserOutputItem{&mainData}
 	for i := range schemas {
 		sch := schemas[i]
 		if sch.Props != nil {
-			outputItems = append(outputItems, parseObject(sch, args))
+			mainData.Content += parseObjectV2(sch).Content + "\n\n"
 		} else if sch.Enums != nil {
-			outputItems = append(outputItems, parseEnum(sch))
-		} else {
-			fmt.Println(3)
+			mainData.Content += parseEnum(sch).Content + "\n\n"
 		}
 	}
 	return outputItems
 }
 
-func parseEnum(sch *schema.Schema) *p.ParserOutputItem {
-	output := p.ParserOutputItem{
-		Path:    fmt.Sprintf("enum_%s.ts", sch.PascalName),
-		Content: "",
-	}
-	enumData := fmt.Sprintf(""+
-		"export type %s =\n",
-		sch.PascalName,
-	)
-	defaultValue := fmt.Sprintf(
-		"export function %sDefault(): %s {\n",
-		sch.PascalName, sch.PascalName,
-	)
-	for i := range sch.Enums {
-		enum := sch.Enums[i]
-		val := ""
-		if enum.Value != nil {
-			val = *enum.Value
-		} else {
-			val = enum.Name
-		}
-		if i == 0 {
-			defaultValue += fmt.Sprintf(
-				"    return '%s';\n",
-				val,
-			)
-		}
-		enumData += fmt.Sprintf(
-			"    | '%s'\n",
-			val,
-		)
-	}
-	defaultValue += "}\n"
-	enumData += "\n\n"
-	enumData += defaultValue
-	output.Content = enumData
-	return &output
-}
-
-func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
+func parseObject(sch *schema.Schema) *p.ParserOutputItem {
 	output := p.ParserOutputItem{
 		Path:    fmt.Sprintf("obj_%s.ts", sch.PascalName),
 		Content: "",

@@ -1,0 +1,3 @@
+        if (this.{{.PropName}} !== undefined) {
+            Minibin.{{.PackMethod}}(result, this.{{.PropName}}{{.MethodCall}}, {{.Pos}}{{.Decimals}}); 
+        }

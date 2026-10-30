@@ -1,0 +1,6 @@
+    get{{.Name}}(): {{.PropType}} {
+        return this.{{.PropName}};
+    }
+    set{{.Name}}(value: {{.PropType}}): void {
+        this.{{.PropName}} = value;
+    }

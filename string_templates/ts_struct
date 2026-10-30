@@ -1,0 +1,52 @@
+// ----------------------------------------------------------------------------
+// --- {{.Name}}
+// ----------------------------------------------------------------------------
+
+export interface {{.Name}}T {
+{{.Values}}
+}
+
+export class {{.Name}} {
+{{.Values}}
+
+    constructor(data: {{.Name}}T) {
+{{.MapValues}}
+    }
+
+    copy(): {{.Name}} {
+        return new {{.Name}}({
+{{.CopyValues}}
+        });
+    }
+
+    static newEmpty(): {{.Name}} {
+        return new {{.Name}}({
+{{.EmptyValues}}
+        });
+    }
+
+{{.GettersSetters}}
+
+    setPropAtPos(pos: number, value: unknown): void {
+        switch (pos) {
+{{.SetPropAtPosCases}}
+            default:
+                throw new Error("Invalid pos: " + pos);
+        }
+    }
+
+    pack(): number[] {
+        const result: number[] = [];
+{{.PackCases}}
+        return result;
+    }
+
+    static unpack(bytes: number[]): [{{.Name}}, Error | null] {
+        const result = {{.Name}}.newEmpty();
+        const err = Minibin.unpack(result, bytes);
+        if (err) {
+            return [result, err];
+        }
+        return [result, null];
+    }
+}

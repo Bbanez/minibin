@@ -1,0 +1,1 @@
+        Minibin.{{.PackMethod}}(result, this.{{.PropName}}{{.MethodCall}}, {{.Pos}}{{.Decimals}}); 

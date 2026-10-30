@@ -1,0 +1,3 @@
+            {{.PropName}}: this.{{.PropName}}.map((v) => {
+                return v{{.MethodCall}};
+            }),

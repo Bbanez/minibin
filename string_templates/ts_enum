@@ -1,0 +1,10 @@
+export type {{.Name}} =
+{{.Values}}
+
+export const {{.Name}}Values: {{.Name}}[] = [
+{{.ValueList}}
+]
+
+export function {{.Name}}Default(): {{.Name}} {
+    return '{{.DefaultValue}}'
+}
