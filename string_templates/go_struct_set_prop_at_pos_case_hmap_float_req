@@ -1,0 +1,7 @@
+    case {{.Pos}}:
+        d, ok := v.(hmapKeyValue)
+        if !ok {
+            return fmt.Errorf("invalid datatype for %s", level)
+        }
+        ud , _ := {{.UnpackFn}}(d.Value, 2)
+        o.{{.PropName}}[d.Key] = ud / {{.Divider}}
