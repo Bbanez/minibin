@@ -1,0 +1,2 @@
+    case "{{.Value}}":
+        return {{.Name}}, nil

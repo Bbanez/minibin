@@ -1,0 +1,29 @@
+package minibin
+
+import "fmt"
+
+type {{.Name}} string
+
+const (
+{{.Values}}
+)
+
+var {{.Name}}Values = []{{.Name}}{
+{{.ValueList}}
+}
+
+func (o {{.Name}}) ToStr() string {
+    switch o {
+{{.ToStrCases}}
+    default:
+        panic(fmt.Errorf("Invalid Lifecycle: %s", o))
+    }
+}
+
+func {{.Name}}FromStr(v string) ({{.Name}}, error) {
+    switch v {
+{{.FromStrCases}}
+    default:
+        return "", fmt.Errorf("Invalid Lifecycle: %s", v)
+    }
+}

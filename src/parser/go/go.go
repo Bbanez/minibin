@@ -66,15 +66,6 @@ func goRefType(ref *string, path string) string {
 	return parts[1]
 }
 
-func goString(value string) string {
-	return fmt.Sprintf("%q", value)
-}
-
-func goTagValue(value string) string {
-	quoted := goString(value)
-	return quoted[1 : len(quoted)-1]
-}
-
 func Parse(schemas []*schema.Schema, args *utils.Args) []*p.ParserOutputItem {
 	schemas = append(schemas, GoOpenApiSchemas()...)
 	outputItems := []*p.ParserOutputItem{
@@ -82,10 +73,6 @@ func Parse(schemas []*schema.Schema, args *utils.Args) []*p.ParserOutputItem {
 			Path:    "minibin__common.go",
 			Content: Common,
 		},
-		// {
-		// 	Path:    "minibin__openapi_model.go",
-		// 	Content: GoOpenApiModel,
-		// },
 		{
 			Path:    "minibin__openapi_utils.go",
 			Content: GoOpenApiUtils,
@@ -94,7 +81,7 @@ func Parse(schemas []*schema.Schema, args *utils.Args) []*p.ParserOutputItem {
 	for i := range schemas {
 		sch := schemas[i]
 		if sch.Props != nil {
-			outputItems = append(outputItems, parseObject(sch, args))
+			outputItems = append(outputItems, parseObject(sch))
 		} else if sch.Enums != nil {
 			outputItems = append(outputItems, parseEnum(sch))
 		} else {
@@ -105,77 +92,74 @@ func Parse(schemas []*schema.Schema, args *utils.Args) []*p.ParserOutputItem {
 }
 
 func parseEnum(sch *schema.Schema) *p.ParserOutputItem {
-	if !validGoIdentifier(sch.PascalName) {
-		panic(fmt.Errorf("invalid Go schema name %q in %s", sch.Name, sch.RPath))
-	}
-	output := p.ParserOutputItem{}
-	cont := "package minibin\n\nimport \"fmt\"\n\n"
-	cont += fmt.Sprintf("type %s string\n\nconst (\n", sch.PascalName)
-	toStrFn := fmt.Sprintf(
-		"\nfunc (o %s) ToStr() string {\n    switch o {\n",
-		sch.PascalName,
-	)
-	fromStrFn := fmt.Sprintf(
-		"\n"+
-			"func %sFromStr(v string) (%s, error) {\n"+
-			"    switch v {\n",
-		sch.PascalName, sch.PascalName,
-	)
-	toOpenApi := fmt.Sprintf(
-		"\n"+
-			"func %sOpenApi() (string, OpenApiObjectSchema) {\n"+
-			"    return EnumToOpenApiSchema(\n"+
-			"        \"%s\",\n"+
-			"        []string{\n",
-		sch.PascalName, sch.PascalName,
-	)
-	upperName := utils.ToUpperSnakeCase(sch.PascalName)
+	name := sch.PascalName
+	upperName := utils.ToUpperSnakeCase(name)
+	fromStrCases := utils.Arr[string]()
+	toStrCases := utils.Arr[string]()
+	valueList := utils.Arr[string]()
+	values := utils.Arr[string]()
+
 	longestNameLen := 1
-	for i := range sch.Enums {
-		enum := sch.Enums[i]
+	for _, enum := range sch.Enums {
 		enum.GoName = upperName + "_" + utils.ToUpperSnakeCase(enum.Name)
+		if len(enum.GoName) > longestNameLen {
+			longestNameLen = len(enum.GoName)
+		}
+	}
+
+	for _, enum := range sch.Enums {
 		var value string
 		if enum.Value != nil {
 			value = *enum.Value
 		} else {
 			value = enum.Name
 		}
-		toOpenApi += fmt.Sprintf("            %s,\n", goString(value))
-		if len(enum.GoName) > longestNameLen {
-			longestNameLen = len(enum.GoName)
-		}
-		cont += fmt.Sprintf("    %s$name%s = %s\n", enum.GoName, sch.PascalName, goString(value))
-		toStrFn += fmt.Sprintf("    case %s:\n        return %s\n", enum.GoName, goString(value))
-		fromStrFn += fmt.Sprintf("    case %s:\n        return %s, nil\n", goString(value), enum.GoName)
-	}
-	toOpenApi += "" +
-		"        },\n" +
-		"    )\n" +
-		"}\n"
-	cont += ")\n\n"
-	toStrFn += "    default:\n        panic(fmt.Errorf(\"Invalid " + sch.PascalName + ": %s\", o))\n"
-	toStrFn += "    }\n}\n"
-	fromStrFn += "    default:\n        return \"\", fmt.Errorf(\"invalid " + sch.PascalName + ": %s\", v)\n"
-	fromStrFn += "    }\n}\n"
-	for i := range sch.Enums {
-		enum := sch.Enums[i]
-		nameDelta := longestNameLen - len(enum.GoName) + 1
-		nameSpackes := strings.Repeat(" ", nameDelta)
-		cont = strings.Replace(
-			cont,
-			enum.GoName+"$name",
-			enum.GoName+nameSpackes,
-			1,
+		enumItemName := upperName + "_" + utils.ToUpperSnakeCase(enum.Name)
+		indent := longestNameLen - len(enumItemName) + 1
+		indentStr := utils.RepeatString(" ", indent)
+		fromStrCases.Push(
+			string_templates.GoEnumFromStrCase(
+				enumItemName,
+				value,
+			),
+		)
+		toStrCases.Push(
+			string_templates.GoEnumToStrCase(
+				enumItemName,
+				value,
+			),
+		)
+		valueList.Push(
+			string_templates.GoEnumValueListItem(
+				value,
+			),
+		)
+		values.Push(
+			string_templates.GoEnumValue(
+				indentStr,
+				enumItemName,
+				name,
+				value,
+			),
 		)
 	}
+
+	enumData := string_templates.GoEnum(
+		strings.Join(fromStrCases.Items, "\n"),
+		name,
+		strings.Join(toStrCases.Items, "\n"),
+		strings.Join(valueList.Items, "\n"),
+		strings.Join(values.Items, "\n"),
+	)
+	output := p.ParserOutputItem{}
 	output.Path = strings.ReplaceAll(sch.RPath, ".", "_")
 	output.Path = strings.ReplaceAll(output.Path, "/", "_")
 	output.Path = "enum_" + output.Path + ".go"
-	output.Content = cont + toStrFn + fromStrFn + toOpenApi
+	output.Content = enumData
 	return &output
 }
 
-func parseObject(sch *schema.Schema, args *utils.Args) *p.ParserOutputItem {
+func parseObject(sch *schema.Schema) *p.ParserOutputItem {
 	structName := sch.PascalName
 	copyFnFields := utils.Arr[string]()
 	getPropNameAtPosCases := utils.Arr[string]()
