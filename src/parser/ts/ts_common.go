@@ -28,7 +28,7 @@ export class Minibin {
         while (atByte < bytes.length) {
             const pos = bytes[atByte];
             atByte += 1;
-            const [typ, lenD] = unmergeDataTypeAndLenDataLen(bytes[atByte]);
+            const typ = bytes[atByte]
             atByte += 1;
             switch (typ) {
                 case 0: {
@@ -40,7 +40,6 @@ export class Minibin {
                         const [data, next] = this.unpackString(
                             bytes,
                             atByte,
-                            lenD,
                         );
                         atByte = next;
                         o.setPropAtPos(pos, data);
@@ -51,7 +50,6 @@ export class Minibin {
                         const [data, next] = this.unpackInt32(
                             bytes,
                             atByte,
-                            lenD,
                         );
                         atByte = next;
                         o.setPropAtPos(pos, data);
@@ -62,7 +60,6 @@ export class Minibin {
                         const [data, next] = this.unpackInt64(
                             bytes,
                             atByte,
-                            lenD,
                         );
                         atByte = next;
                         o.setPropAtPos(pos, data);
@@ -73,7 +70,6 @@ export class Minibin {
                         const [data, next] = this.unpackUint32(
                             bytes,
                             atByte,
-                            lenD,
                         );
                         atByte = next;
                         o.setPropAtPos(pos, data);
@@ -84,7 +80,6 @@ export class Minibin {
                         const [data, next] = this.unpackUint64(
                             bytes,
                             atByte,
-                            lenD,
                         );
                         atByte = next;
                         o.setPropAtPos(pos, data);
@@ -95,7 +90,6 @@ export class Minibin {
                         const [data, next] = this.unpackInt32(
                             bytes,
                             atByte,
-                            lenD,
                         );
                         atByte = next;
                         o.setPropAtPos(pos, data);
@@ -106,7 +100,6 @@ export class Minibin {
                         const [data, next] = this.unpackInt64(
                             bytes,
                             atByte,
-                            lenD,
                         );
                         atByte = next;
                         o.setPropAtPos(pos, data);
@@ -124,7 +117,6 @@ export class Minibin {
                         const [data, next] = this.unpackObject(
                             bytes,
                             atByte,
-                            lenD,
                         );
                         atByte = next;
                         o.setPropAtPos(pos, data);
@@ -135,7 +127,6 @@ export class Minibin {
                         const [data, next] = this.unpackEnum(
                             bytes,
                             atByte,
-                            lenD,
                         );
                         atByte = next;
                         o.setPropAtPos(pos, data);
@@ -146,12 +137,16 @@ export class Minibin {
                         const [data, next] = this.unpackBytes(
                             bytes,
                             atByte,
-                            lenD,
                         );
                         atByte = next;
                         o.setPropAtPos(pos, data);
                     }
                     break;
+                case 12: {
+                    const [key, value, next] = this.unpackHmap(bytes, atByte);
+                    atByte = next;
+                    o.setPropAtPos(pos, {key, value})
+                } break;
                 default: {
                     return new Error('Unknown data type: ' + typ);
                 }
@@ -160,7 +155,7 @@ export class Minibin {
         return null;
     }
 
-    static packString(buffer: number[], s: string, pos: number): void {
+	    static packString(buffer: number[], s: string, pos: number): void {
         const data = Array.from(new TextEncoder().encode(s));
         const [lenD, dataLenBytes] = splitUint32(data.length);
         const typLenD = mergeDataTypeAndLenDataLen(1, lenD);
@@ -169,9 +164,9 @@ export class Minibin {
     static unpackString(
         buffer: number[],
         atByte: number,
-        lenD: number,
     ): [string, number] {
-        lenD++;
+        const lenD = buffer[atByte];
+        atByte++;
         const dataLen = mergeUint32(lenD, buffer.slice(atByte, atByte + lenD));
         atByte += lenD;
         const dataBytes = buffer.slice(atByte, atByte + dataLen);
@@ -194,10 +189,9 @@ export class Minibin {
     static unpackInt32(
         buffer: number[],
         atByte: number,
-        lenD: number,
     ): [number, number] {
-        // This is required because lenD == 0 represents 1 byte of data
-        lenD++;
+        const lenD = buffer[atByte];
+        atByte++;
         const neg = buffer[atByte];
         atByte++;
         const data = mergeUint32(lenD, buffer.slice(atByte, atByte + lenD));
@@ -218,10 +212,9 @@ export class Minibin {
     static unpackInt64(
         buffer: number[],
         atByte: number,
-        lenD: number,
     ): [bigint, number] {
-        // This is required because lenD == 0 represents 1 byte of data
-        lenD++;
+        const lenD = buffer[atByte];
+        atByte++;
         const neg = buffer[atByte];
         atByte++;
         const data = mergeUint64(lenD, buffer.slice(atByte, atByte + lenD));
@@ -237,10 +230,9 @@ export class Minibin {
     static unpackUint32(
         buffer: number[],
         atByte: number,
-        lenD: number,
     ): [number, number] {
-        // This is required because lenD == 0 represents 1 byte of data
-        lenD++;
+        const lenD = buffer[atByte];
+        atByte++;
         const data = mergeUint32(lenD, buffer.slice(atByte, atByte + lenD));
         atByte += lenD;
         return [data >>> 0, atByte];
@@ -254,10 +246,9 @@ export class Minibin {
     static unpackUint64(
         buffer: number[],
         atByte: number,
-        lenD: number,
     ): [bigint, number] {
-        // This is required because lenD == 0 represents 1 byte of data
-        lenD++;
+        const lenD = buffer[atByte];
+        atByte++;
         const data = mergeUint64(lenD, buffer.slice(atByte, atByte + lenD));
         atByte += lenD;
         return [data, atByte];
@@ -317,9 +308,9 @@ export class Minibin {
     static unpackObject(
         buffer: number[],
         atByte: number,
-        lenD: number,
     ): [number[], number] {
-        lenD++;
+        const lenD = buffer[atByte];
+        atByte++;
         const dataLen = mergeUint32(lenD, buffer.slice(atByte, atByte + lenD));
         atByte += lenD;
         const dataBytes = buffer.slice(atByte, atByte + dataLen);
@@ -335,9 +326,9 @@ export class Minibin {
     static unpackEnum(
         buffer: number[],
         atByte: number,
-        lenD: number,
     ): [string, number] {
-        lenD++;
+        const lenD = buffer[atByte];
+        atByte++;
         const dataLen = mergeUint32(lenD, buffer.slice(atByte, atByte + lenD));
         atByte += lenD;
         const dataBytes = buffer.slice(atByte, atByte + dataLen);
@@ -355,13 +346,41 @@ export class Minibin {
     static unpackBytes(
         buffer: number[],
         atByte: number,
-        lenD: number,
     ): [number[], number] {
-        lenD++;
+        const lenD  = buffer[atByte];
+        atByte++;
         const dataLen = mergeUint32(lenD, buffer.slice(atByte, atByte + lenD));
         atByte += lenD;
         const dataBytes = buffer.slice(atByte, atByte + dataLen);
         return [dataBytes, atByte + dataLen];
+    }
+
+    static packHmap(key: string, value: number[], pos: number): number[] {
+        const [keyLenD, keyLenDBytes] = splitUint32(key.length);
+        const [valueLenD, valueLenDBytes] = splitUint32(value.length);
+        const typ = 12
+        const keyData = Array.from(new TextEncoder().encode(key));
+        return [
+            pos,
+            typ, 
+            keyLenD, ...keyLenDBytes, ...keyData, 
+            valueLenD, ...valueLenDBytes, ...value,
+        ];
+    }
+    static unpackHmap(b: number[], atByte: number): [key: string, value: number[], next: number] {
+        const keyLenD = b[atByte];
+        atByte++;
+        const keyLenDBytes = mergeUint32(keyLenD, b.slice(atByte, atByte + keyLenD));
+        atByte += keyLenD;
+        const key = new TextDecoder().decode(new Uint8Array(b.slice(atByte, atByte + keyLenDBytes)));
+        atByte += keyLenDBytes;
+        const valueLenD = b[atByte];
+        atByte++;
+        const valueLenDBytes = mergeUint32(valueLenD, b.slice(atByte, atByte + valueLenD));
+        atByte += valueLenD;
+        const value = b.slice(atByte, atByte + valueLenDBytes);
+        atByte += valueLenDBytes;
+        return [key, value, atByte];
     }
 }
 
