@@ -4,6 +4,13 @@ const Common = `export interface UnpackageEntry {
     setPropAtPos(pos: number, value: unknown): void;
 }
 
+class HmapKeyValue {
+	constructor(
+		public key: string,
+		public value: number[],
+	) {}
+}
+
 function loopMap<T, K>(
     rec: Record<string, T>, 
     callback: (
@@ -145,7 +152,7 @@ export class Minibin {
                 case 12: {
                     const [key, value, next] = this.unpackHmap(bytes, atByte);
                     atByte = next;
-                    o.setPropAtPos(pos, {key, value})
+                    o.setPropAtPos(pos, new HmapKeyValue(key, value))
                 } break;
                 default: {
                     return new Error('Unknown data type: ' + typ);
@@ -155,7 +162,7 @@ export class Minibin {
         return null;
     }
 
-	    static packString(buffer: number[], s: string, pos: number): void {
+	static packString(buffer: number[], s: string, pos: number): void {
         const data = Array.from(new TextEncoder().encode(s));
         const [lenD, dataLenBytes] = splitUint32(data.length);
         const typLenD = mergeDataTypeAndLenDataLen(1, lenD);

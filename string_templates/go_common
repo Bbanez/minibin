@@ -1,6 +1,4 @@
-package parser_go
-
-const Common string = `package minibin
+package minibin
 
 import (
 	"fmt"
@@ -857,4 +855,4 @@ func mergeUint64(lenD int, bytes []byte) uint64 {
 			uint64(bytes[7])
 	}
 }
-`
+

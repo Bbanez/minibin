@@ -1,0 +1,8 @@
+            case {{.Pos}}: {
+                const d = value as HmapKeyValue;
+                const [data, err] = {{.Type}}.unpack(d.value);
+                if (err) {
+                    return err;
+                }
+                this.{{.PropName}}[d.key] = data;
+            } break;

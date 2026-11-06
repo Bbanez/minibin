@@ -27,12 +27,13 @@ export class {{.Name}} {
 
 {{.GettersSetters}}
 
-    setPropAtPos(pos: number, value: unknown): void {
+    setPropAtPos(pos: number, value: unknown): Error | null {
         switch (pos) {
 {{.SetPropAtPosCases}}
             default:
-                throw new Error("Invalid pos: " + pos);
+                return new Error("Invalid pos: " + pos);
         }
+        return null;
     }
 
     pack(): number[] {

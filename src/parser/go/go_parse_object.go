@@ -979,34 +979,18 @@ func toJsonBodyWrapper(prop *schema.SchemaProp) string {
 		case "object":
 			methodCall = ".ToJson()"
 		}
-		if prop.Array {
-			if prop.Required {
-				return string_templates.GoToJsonPrimitiveArr(
-					prop.GoName,
-					jsonKey,
-					"hmapSliceToStringSlice",
-				)
-			} else {
-				return string_templates.GoToJsonPrimitiveArr(
-					prop.GoName,
-					jsonKey,
-					"hmapSliceToStringSliceRef",
-				)
-			}
+		if prop.Required {
+			return string_templates.GoToJsonHmapReq(
+				formatValueFn,
+				prop.GoName,
+				methodCall,
+			)
 		} else {
-			if prop.Required {
-				return string_templates.GoToJsonHmapReq(
-					formatValueFn,
-					prop.GoName,
-					methodCall,
-				)
-			} else {
-				return string_templates.GoToJsonHmapOpt(
-					formatValueFn,
-					prop.GoName,
-					methodCall,
-				)
-			}
+			return string_templates.GoToJsonHmapOpt(
+				formatValueFn,
+				prop.GoName,
+				methodCall,
+			)
 		}
 	}
 	return "// Unknown type: " + prop.Typ

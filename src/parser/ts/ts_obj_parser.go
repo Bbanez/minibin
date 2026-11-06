@@ -11,7 +11,7 @@ import (
 	"github.com/bbanez/minibin/src/utils"
 )
 
-func parseObjectV2(sch *schema.Schema) *p.ParserOutputItem {
+func parseObject(sch *schema.Schema) *p.ParserOutputItem {
 	output := p.ParserOutputItem{
 		Path:    fmt.Sprintf("obj_%s.ts", sch.PascalName),
 		Content: "",
@@ -361,9 +361,21 @@ func parseObjectV2(sch *schema.Schema) *p.ParserOutputItem {
 					prop,
 					"",
 				))
+				setPropAtPosCases.Push(setPropAtPosCaseHmap(
+					prop,
+					posStr,
+					"unpackString",
+					"",
+				))
 			case "i32":
 				copyValues.Push(copyHmapValue(
 					prop,
+					"",
+				))
+				setPropAtPosCases.Push(setPropAtPosCaseHmap(
+					prop,
+					posStr,
+					"unpackInt32",
 					"",
 				))
 			case "i64":
@@ -371,9 +383,21 @@ func parseObjectV2(sch *schema.Schema) *p.ParserOutputItem {
 					prop,
 					"",
 				))
+				setPropAtPosCases.Push(setPropAtPosCaseHmap(
+					prop,
+					posStr,
+					"unpackInt64",
+					"",
+				))
 			case "u32":
 				copyValues.Push(copyHmapValue(
 					prop,
+					"",
+				))
+				setPropAtPosCases.Push(setPropAtPosCaseHmap(
+					prop,
+					posStr,
+					"unpackUint32",
 					"",
 				))
 			case "u64":
@@ -381,19 +405,45 @@ func parseObjectV2(sch *schema.Schema) *p.ParserOutputItem {
 					prop,
 					"",
 				))
+				setPropAtPosCases.Push(setPropAtPosCaseHmap(
+					prop,
+					posStr,
+					"unpackUint64",
+					"",
+				))
 			case "f32":
+				divider := strconv.FormatFloat(float64(prop.Decimals), 'f', -1, 32)
 				copyValues.Push(copyHmapValue(
 					prop,
 					"",
 				))
+				setPropAtPosCases.Push(setPropAtPosCaseHmap(
+					prop,
+					posStr,
+					"unpackInt32",
+					" / "+divider,
+				))
 			case "f64":
+				divider := strconv.FormatFloat(float64(prop.Decimals), 'f', -1, 32)
 				copyValues.Push(copyHmapValue(
 					prop,
 					"",
+				))
+				setPropAtPosCases.Push(setPropAtPosCaseHmap(
+					prop,
+					posStr,
+					"unpackInt64",
+					" / "+divider,
 				))
 			case "bool":
 				copyValues.Push(copyHmapValue(
 					prop,
+					"",
+				))
+				setPropAtPosCases.Push(setPropAtPosCaseHmap(
+					prop,
+					posStr,
+					"unpackBool",
 					"",
 				))
 			case "enum":
@@ -401,11 +451,35 @@ func parseObjectV2(sch *schema.Schema) *p.ParserOutputItem {
 					prop,
 					"",
 				))
+				setPropAtPosCases.Push(setPropAtPosCaseHmap(
+					prop,
+					posStr,
+					"unpackEnum",
+					"",
+				))
 			case "object":
+				hmapTyp := tsRefType(prop.Ref, "")
 				copyValues.Push(copyHmapValue(
 					prop,
 					".copy()",
 				))
+				if prop.Required {
+					setPropAtPosCases.Push(
+						string_templates.TsStructSetPropAtPosPrimHmapObjReq(
+							posStr,
+							prop.Name,
+							hmapTyp,
+						),
+					)
+				} else {
+					setPropAtPosCases.Push(
+						string_templates.TsStructSetPropAtPosPrimHmapObjOpt(
+							posStr,
+							prop.Name,
+							hmapTyp,
+						),
+					)
+				}
 			}
 		}
 	}
@@ -421,6 +495,27 @@ func parseObjectV2(sch *schema.Schema) *p.ParserOutputItem {
 		strings.Join(values.Items, "\n"),
 	)
 	return &output
+}
+
+func setPropAtPosCaseHmap(
+	prop *schema.SchemaProp, posStr string,
+	unpackFn string, divider string,
+) string {
+	if prop.Required {
+		return string_templates.TsStructSetPropAtPosPrimHmapReq(
+			divider,
+			posStr,
+			prop.Name,
+			unpackFn,
+		)
+	} else {
+		return string_templates.TsStructSetPropAtPosPrimHmapOpt(
+			divider,
+			posStr,
+			prop.Name,
+			unpackFn,
+		)
+	}
 }
 
 func packPropCasePrim(

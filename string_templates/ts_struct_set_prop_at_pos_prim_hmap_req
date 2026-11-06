@@ -1,0 +1,5 @@
+            case {{.Pos}}: {
+                const d = value as HmapKeyValue;
+                const [data] = Minibin.{{.UnpackFunc}}(d.value, 2);
+                this.{{.PropName}}[d.key] = data{{.Divider}};
+            } break;

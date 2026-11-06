@@ -5,6 +5,7 @@ import (
 
 	p "github.com/bbanez/minibin/src/parser"
 	"github.com/bbanez/minibin/src/schema"
+	"github.com/bbanez/minibin/src/string_templates"
 	"github.com/bbanez/minibin/src/utils"
 )
 
@@ -13,11 +14,11 @@ func Parse(schemas []*schema.Schema, args *utils.Args) []*p.ParserOutputItem {
 	outputItems := []*p.ParserOutputItem{
 		{
 			Path:    "minibin__common.go",
-			Content: Common,
+			Content: string_templates.GoCommon(),
 		},
 		{
 			Path:    "minibin__openapi_utils.go",
-			Content: GoOpenApiUtils,
+			Content: string_templates.GoOpenapiCommon(),
 		},
 	}
 	for i := range schemas {

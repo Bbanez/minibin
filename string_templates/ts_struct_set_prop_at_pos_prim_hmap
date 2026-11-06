@@ -1,3 +1,0 @@
-            case {{.Pos}}: {
-                this.{{.PropName}} = (value as {{.PropType}}){{.Divider}};
-            } break;
