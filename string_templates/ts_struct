@@ -42,6 +42,12 @@ export class {{.Name}} {
         return result;
     }
 
+    toJson(): string {
+        const result: string[] = [];
+{{.ToJsonCases}}
+        return "{" + result.join(",") + "}";
+    }
+
     static unpack(bytes: number[]): [{{.Name}}, Error | null] {
         const result = {{.Name}}.newEmpty();
         const err = Minibin.unpack(result, bytes);
@@ -49,5 +55,15 @@ export class {{.Name}} {
             return [result, err];
         }
         return [result, null];
+    }
+
+    static fromJson(jsonStr: string): [{{.Name}}, Error | null] {
+        try {
+            const obj = JSON.parse(jsonStr);
+            const result = new {{.Name}}(obj);
+            return [result, null];
+        } catch (err) {
+            return [{{.Name}}.newEmpty(), err as Error];
+        }
     }
 }

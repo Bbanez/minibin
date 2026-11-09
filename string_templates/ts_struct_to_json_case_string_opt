@@ -1,0 +1,5 @@
+        if (this.{{.PropName}} !== undefined) {
+            result.push(
+                "\"{{.PropName}}\":" + this.{{.PropName}}
+            );
+        }

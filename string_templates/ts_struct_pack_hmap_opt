@@ -1,0 +1,8 @@
+        if (this.{{.PropName}}) {
+            for(const key in this.{{.PropName}}) {
+                const val = this.{{.PropName}}[key];
+                const b: number[] = [];
+                Minibin.{{.PackFn}}(b, val{{.Method}}, 0{{.Divider}});
+                result.push(...Minibin.packHmap(key, b, {{.Pos}}));
+            }
+        }

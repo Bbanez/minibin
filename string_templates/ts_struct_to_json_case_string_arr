@@ -1,0 +1,7 @@
+        {
+            let str = "";
+            for(let i = 0; i < this.{{.PropName}}.length; i++) {
+                str += '"' + this.{{.PropName}}[i] + (i > 0 ? '",' : '"');
+            }
+            result.push('"{{.PropName}}"' + '[' + str + ']');
+        }
