@@ -1,0 +1,12 @@
+// -----------------------------------------------------------------
+// ---- MinibinError Class
+// -----------------------------------------------------------------
+
+
+struct MinibinError {
+public:
+    std::string     message;
+    std::stacktrace trace;
+
+    MinibinError(std::string msg);
+}

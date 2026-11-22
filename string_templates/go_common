@@ -496,7 +496,6 @@ func PackInt64(num int64, pos int) []byte {
 		num = -num
 	}
 	lenD, data := SplitUint64(uint64(num))
-	// typLenD := mergeDataTypeAndLenDataLen(3, byte(lenD))
 	typ := byte(3)
 	result := []byte{byte(pos), typ, byte(lenD), neg}
 	result = append(result, data...)
@@ -673,16 +672,6 @@ func UnpackHMap(b []byte, atByte int) (string, []byte, int) {
 	value := cloneBytes(b[atByte : atByte+valueLenDBytes])
 	atByte += valueLenDBytes
 	return key, value, atByte
-}
-
-func mergeDataTypeAndLenDataLen(typ byte, lenD byte) byte {
-	return lenD + (typ << 4)
-}
-
-func unmergeDataTypeAndLenDataLen(b byte) (int, int) {
-	lenD := b & 0b00001111
-	typ := (b & 0b11110000) >> 4
-	return int(typ), int(lenD)
 }
 
 func SplitUint32(unum uint32) (int, []byte) {

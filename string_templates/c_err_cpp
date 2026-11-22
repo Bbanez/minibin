@@ -1,0 +1,8 @@
+// -----------------------------------------------------------------
+// ---- MinibinError Class
+// -----------------------------------------------------------------
+
+MinibinError::MinibinError(std::string msg) {
+    this->message = msg;
+    this->trace   = std::stacktrace::current();
+}

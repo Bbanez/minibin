@@ -1,0 +1,72 @@
+template <typename T, typename K>
+class Tuple {
+public:
+    Tuple(T a, K b) : a(a), b(b) {}
+
+    T a;
+    K b;
+};
+
+template <typename T, typename K, typename L>
+class Triple {
+public:
+    Tuple(T a, K b, L c) : a(a), b(b), c(c) {}
+
+    T a;
+    K b;
+    L c;
+};
+
+
+// ---------------------------------------------------------------------------
+// ---- Common functions for packing and unpacking data
+// ---------------------------------------------------------------------------
+Tuple<uint8_t, std::vector<uint8_t>> _split_uint32(uint32_t unum);
+uint32_t _merge_uint32(uint8_t len_d, const std::vector<uint8_t>& bytes);
+
+Tuple<uint8_t, std::vector<uint8_t>> _split_uint64(uint64_t unum);
+uint64_t _merge_uint64(uint8_t len_d, const std::vector<uint8_t>& bytes);
+
+std::vector<uint8_t> _pack_string(const std::string& str, uint8_t pos);
+Tuple<std::string, uint32_t> _unpack_string(const std::vector<uint8_t>& b, uint32_t at_byte);
+
+std::vector<uint8_t> _pack_int32(int32_t num, uint8_t pos);
+Tuple<int32_t, uint32_t> _unpack_int32(const std::vector<uint8_t>& b,
+                                           uint32_t at_byte);
+
+std::vector<uint8_t> _pack_int64(int64_t num, uint8_t pos);
+Tuple<int64_t, uint32_t> _unpack_int64(const std::vector<uint8_t>& b,
+                                           uint32_t at_byte);
+
+std::vector<uint8_t> _pack_uint32(uint32_t num, uint8_t pos);
+Tuple<uint32_t, uint32_t> _unpack_uint32(const std::vector<uint8_t>& b,
+                                             uint32_t at_byte);
+
+std::vector<uint8_t> _pack_uint64(uint64_t num, uint8_t pos);
+Tuple<uint64_t, uint32_t> _unpack_uint64(const std::vector<uint8_t>& b,
+                                             uint32_t at_byte);
+
+std::vector<uint8_t> _pack_float32(float num, uint8_t pos, float decimals);
+
+std::vector<uint8_t> _pack_float64(double num, uint8_t pos, double decimals);
+
+std::vector<uint8_t> _pack_bool(bool num, uint8_t pos);
+Tuple<bool, uint32_t> _unpack_bool(const std::vector<uint8_t>& b,
+                                       uint32_t at_byte);
+
+std::vector<uint8_t> _pack_object(const std::vector<uint8_t>& data, uint8_t pos);
+Tuple<std::vector<uint8_t>, uint32_t> _unpack_object(
+    const std::vector<uint8_t>& b, uint32_t at_byte);
+
+std::vector<uint8_t> _pack_enum(const std::string& s, uint8_t pos);
+Tuple<std::string, uint32_t> _unpack_enum(const std::vector<uint8_t>& b,
+                                              uint32_t at_byte);
+
+std::vector<uint8_t> _pack_bytes(const std::vector<uint8_t>& data, uint8_t pos);
+Tuple<std::vector<uint8_t>, uint32_t> _unpack_bytes(
+	const std::vector<uint8_t>& b, uint32_t at_byte);
+
+std::vector<uint8_t> _pack_hmap(std::string key, const std::vector<uint8_t>& value, uint8_t pos);
+Triple<std::string, std::vector<uint8_t>, uint32_t> _unpack_hmap(
+	const std::vector<uint8_t>& b, uint32_t at_byte);
+// ---------------------------------------------------------------------------`

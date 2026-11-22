@@ -1,0 +1,13 @@
+// -----------------------------------------------------------------
+// ---- @name Class
+// -----------------------------------------------------------------
+class @name {
+public:
+	@name();
+	@name(@constructorArgs);
+	@props
+
+	std::string getPropNameAtPos(uint8_t pos);
+    std::vector<uint8_t> pack();
+};
+@name unpack@name(const std::vector<uint8_t>& b, std::string level = "@name");

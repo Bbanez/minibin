@@ -1,0 +1,35 @@
+// -----------------------------------------------------------------
+// ---- @name Class
+// -----------------------------------------------------------------
+@name::@name() {
+@empty_constructor_args
+}
+@name::@name(@constructor_args) {
+@constructorBody
+}
+std::string @name::get_prop_name_at_pos(uint8_t pos) {
+    switch(pos) {
+@pos_to_prop_name_case
+    };
+	return "__unknown__[" + std::to_string(pos) + "]";
+}
+std::vector<uint8_t> @name::pack() {
+	std::vector<uint8_t> result;
+@pack_cases
+	return result;
+}
+@name @name_unpack(const std::vector<uint8_t>& b, std::string level) {
+	@name result = @name();
+	uint32_t at_byte = 0;
+	while (at_byte < b.size()) {
+        uint8_t pos = b[atByte];
+        at_byte++;
+        Tuple<uint8_t, uint8_t> res = _unmerge_data_type_and_len_data_len(b[at_byte]);
+		uint8_t len_d = res.a;
+        at_byte++;
+        std::string prop_name = result.get_prop_name_at_pos(pos);
+        std::string lvl       = level + "." + prop_name;
+@unpackProps
+    }
+	return result;
+}
