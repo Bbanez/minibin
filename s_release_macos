@@ -1,0 +1,4 @@
+#!/bin/bash
+
+cargo build --release aarch64-apple-darwin
+cargo build --release x86_64-apple-darwin
